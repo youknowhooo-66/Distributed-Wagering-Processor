@@ -1,0 +1,65 @@
+# Migrations Down/Up Evidence
+Timestamp: 2026-10-11T18:14:51Z
+
+## Before down
+                         name                         
+------------------------------------------------------
+ Migration20260101000001_initial_schema
+ Migration20261011000001_ledger_immutability
+ Migration20261011000002_reversal_unique_index
+ Migration20261011000003_wager_balance_after
+ Migration20261011000004_strict_single_reversal_index
+(5 rows)
+
+
+## Running migration:down (x4 to reach initial)
+$ bun run src/shared/infrastructure/database/run-migrations-down.ts
+Connecting to PostgreSQL and reverting migration...
+[90m[migrator] [39mProcessing 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mReverted 'Migration20261011000004_strict_single_reversal_index'
+Migration reverted successfully!
+$ bun run src/shared/infrastructure/database/run-migrations-down.ts
+Connecting to PostgreSQL and reverting migration...
+[90m[migrator] [39mProcessing 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mReverted 'Migration20261011000003_wager_balance_after'
+Migration reverted successfully!
+$ bun run src/shared/infrastructure/database/run-migrations-down.ts
+Connecting to PostgreSQL and reverting migration...
+[90m[migrator] [39mProcessing 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mReverted 'Migration20261011000002_reversal_unique_index'
+Migration reverted successfully!
+$ bun run src/shared/infrastructure/database/run-migrations-down.ts
+Connecting to PostgreSQL and reverting migration...
+[90m[migrator] [39mProcessing 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mReverted 'Migration20261011000001_ledger_immutability'
+Migration reverted successfully!
+
+## After down
+                  name                  
+----------------------------------------
+ Migration20260101000001_initial_schema
+(1 row)
+
+
+## Running migration:up
+Connecting to PostgreSQL and running migrations...
+[90m[migrator] [39mProcessing 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mApplied 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mProcessing 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mApplied 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mProcessing 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mApplied 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mProcessing 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mApplied 'Migration20261011000004_strict_single_reversal_index'
+Migrations applied successfully!
+
+## After up
+                         name                         
+------------------------------------------------------
+ Migration20260101000001_initial_schema
+ Migration20261011000001_ledger_immutability
+ Migration20261011000002_reversal_unique_index
+ Migration20261011000003_wager_balance_after
+ Migration20261011000004_strict_single_reversal_index
+(5 rows)
+

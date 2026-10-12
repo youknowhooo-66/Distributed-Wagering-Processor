@@ -1,0 +1,18 @@
+bun test v1.4.2 (744846f84)
+
+src/test/concurrency/multiprocess-concurrency.spec.ts:
+[MULTI-PROCESS RESULTS] 3 Processes | Total Processed: 30 | Total 503: 0
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-deb3-7149-8831-a7dd4bb5c2ab verified against 31 ledger entries.[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-e2bf-77d4-b971-a5f7daf3339d verified against 2 ledger entries.[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-e2fd-726e-904b-6daaafa8fd40 verified against 2 ledger entries.[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[RetryPendingReferencesUseCase] [39m[32mSuccessfully resolved pending reference for tx 01a12e52-e36e-7543-bbbd-88a18d3f27c7[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-e369-7180-8e7e-9c29b2426dcc verified against 3 ledger entries.[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-e391-7231-88d7-c00eec171958 verified against 5 ledger entries.[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-e3bf-7209-ae8d-b5fbabe52351 verified against 2 ledger entries.[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-e3bf-7209-ae8d-b223a6fb282a verified against 2 ledger entries.[39m
+[32m[Nest] 12054  - [39m10/12/2026, 4:15:46 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-e3bf-7209-ae8d-b9985df14dd1 verified against 2 ledger entries.[39m
+
+ 6 pass
+ 0 fail
+ 144 expect() calls
+Ran 6 tests across 2 files. [1.51s]

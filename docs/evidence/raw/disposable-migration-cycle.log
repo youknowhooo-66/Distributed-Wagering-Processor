@@ -1,0 +1,3 @@
+UP_TABLES: ["mikro_orm_migrations","wallets","wallet_ledger_entries","inbox_messages","wager_transactions","outbox_messages"]
+DOWN_TABLES: []
+DISPOSABLE_CYCLE: SUCCESS

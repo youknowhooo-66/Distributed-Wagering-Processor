@@ -1,0 +1,91 @@
+                           Table "public.wallets"
+     Column     |           Type           | Collation | Nullable | Default 
+----------------+--------------------------+-----------+----------+---------
+ id             | uuid                     |           | not null | 
+ player_id      | uuid                     |           | not null | 
+ currency       | character varying(3)     |           | not null | 
+ balance_amount | numeric(19,2)            |           | not null | 0.00
+ version        | integer                  |           | not null | 1
+ created_at     | timestamp with time zone |           | not null | now()
+ updated_at     | timestamp with time zone |           | not null | now()
+Indexes:
+    "wallets_pkey" PRIMARY KEY, btree (id)
+    "uq_wallets_player_currency" UNIQUE CONSTRAINT, btree (player_id, currency)
+Check constraints:
+    "chk_wallets_balance_non_negative" CHECK (balance_amount >= 0::numeric)
+    "chk_wallets_currency_iso" CHECK (currency::text ~ '^[A-Z]{3}$'::text)
+    "chk_wallets_version_positive" CHECK (version >= 1)
+Referenced by:
+    TABLE "wager_transactions" CONSTRAINT "wager_transactions_wallet_id_fkey" FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+    TABLE "wallet_ledger_entries" CONSTRAINT "wallet_ledger_entries_wallet_id_fkey" FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+
+---
+                                         Table "public.wager_transactions"
+              Column               |           Type           | Collation | Nullable |           Default            
+-----------------------------------+--------------------------+-----------+----------+------------------------------
+ id                                | uuid                     |           | not null | 
+ provider_id                       | character varying(100)   |           | not null | 
+ external_transaction_id           | character varying(255)   |           | not null | 
+ idempotency_key                   | character varying(512)   |           | not null | 
+ payload_hash                      | character varying(64)    |           | not null | 
+ wallet_id                         | uuid                     |           | not null | 
+ player_id                         | uuid                     |           | not null | 
+ round_id                          | character varying(255)   |           | not null | 
+ game_id                           | character varying(255)   |           | not null | 
+ kind                              | character varying(10)    |           | not null | 
+ amount                            | numeric(19,2)            |           | not null | 
+ currency                          | character varying(3)     |           | not null | 
+ reference_external_transaction_id | character varying(255)   |           |          | 
+ reference_transaction_id          | uuid                     |           |          | 
+ status                            | character varying(20)    |           | not null | 'PENDING'::character varying
+ failure_code                      | character varying(100)   |           |          | 
+ created_at                        | timestamp with time zone |           | not null | now()
+ processed_at                      | timestamp with time zone |           |          | 
+ retry_count                       | integer                  |           | not null | 0
+ next_retry_at                     | timestamp with time zone |           |          | 
+ balance_after                     | numeric(19,2)            |           |          | 
+Indexes:
+    "wager_transactions_pkey" PRIMARY KEY, btree (id)
+    "idx_wager_pending_reference" btree (status, next_retry_at) WHERE status::text = 'PENDING_REFERENCE'::text
+    "idx_wager_provider_external_lookup" btree (provider_id, external_transaction_id)
+    "uq_wager_idempotency_key" UNIQUE CONSTRAINT, btree (idempotency_key)
+    "uq_wager_provider_external" UNIQUE CONSTRAINT, btree (provider_id, external_transaction_id)
+    "uq_wager_reference_reversal" UNIQUE, btree (reference_transaction_id) WHERE status::text = 'PROCESSED'::text AND (kind::text = ANY (ARRAY['REFUND'::character varying, 'ROLLBACK'::character varying]::text[]))
+Check constraints:
+    "chk_wager_amount_non_negative" CHECK (amount >= 0::numeric)
+    "chk_wager_kind" CHECK (kind::text = ANY (ARRAY['OPENING'::character varying, 'BET'::character varying, 'WIN'::character varying, 'LOSS'::character varying, 'REFUND'::character varying, 'ROLLBACK'::character varying]::text[]))
+    "chk_wager_reference_required" CHECK ((kind::text <> ALL (ARRAY['REFUND'::character varying, 'ROLLBACK'::character varying]::text[])) OR reference_external_transaction_id IS NOT NULL)
+    "chk_wager_status" CHECK (status::text = ANY (ARRAY['PENDING'::character varying, 'PENDING_REFERENCE'::character varying, 'PROCESSED'::character varying, 'REJECTED'::character varying, 'FAILED'::character varying]::text[]))
+Foreign-key constraints:
+    "wager_transactions_wallet_id_fkey" FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+
+---
+                       Table "public.inbox_messages"
+    Column     |           Type           | Collation | Nullable | Default 
+---------------+--------------------------+-----------+----------+---------
+ consumer_name | character varying(100)   |           | not null | 
+ message_id    | character varying(255)   |           | not null | 
+ payload_hash  | character varying(64)    |           | not null | 
+ received_at   | timestamp with time zone |           | not null | now()
+ processed_at  | timestamp with time zone |           |          | 
+Indexes:
+    "pk_inbox" PRIMARY KEY, btree (consumer_name, message_id)
+
+---
+                       Table "public.outbox_messages"
+     Column      |           Type           | Collation | Nullable | Default 
+-----------------+--------------------------+-----------+----------+---------
+ id              | uuid                     |           | not null | 
+ aggregate_id    | uuid                     |           | not null | 
+ event_type      | character varying(100)   |           | not null | 
+ payload         | jsonb                    |           | not null | 
+ occurred_at     | timestamp with time zone |           | not null | 
+ attempts        | integer                  |           | not null | 0
+ next_attempt_at | timestamp with time zone |           |          | 
+ published_at    | timestamp with time zone |           |          | 
+Indexes:
+    "outbox_messages_pkey" PRIMARY KEY, btree (id)
+    "idx_outbox_pending" btree (next_attempt_at) WHERE published_at IS NULL
+Check constraints:
+    "chk_outbox_attempts" CHECK (attempts >= 0)
+
