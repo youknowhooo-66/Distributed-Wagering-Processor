@@ -53,14 +53,10 @@ describe('Reconciliation — balance x ledger x transactions', () => {
     expect(result.storedBalance.amount).toBe('110.00');
   });
 
-  it('flags a ledger credit that differs from its transaction even when balance == ledger sum', async () => {
-    const { wallet, winId } = await walletWithWin();
-    const conn = orm.em.fork().getConnection();
-
-    // Fabricate the P0-2 class of drift: a PROCESSED transaction of 10.00 whose ledger
-    // entry credits 500.00, with the wallet balance moved by 500.00 (balance == ledger sum).
+  /** P0-2 class of drift: a PROCESSED transaction of 10.00 whose ledger entry credits 500.00. */
+  async function insertDrift(em: { execute: (sql: string, params?: unknown[]) => Promise<unknown> }, walletId: string, winId: string) {
     const driftTxId = generateId();
-    await conn.execute(
+    await em.execute(
       `INSERT INTO wager_transactions
          SELECT (jsonb_populate_record(t, jsonb_build_object(
                   'id', ?::text,
@@ -69,28 +65,19 @@ describe('Reconciliation — balance x ledger x transactions', () => {
            FROM wager_transactions t WHERE t.id = ?`,
       [driftTxId, driftTxId, driftTxId, winId],
     );
-    await conn.execute(
+    await em.execute(
       `INSERT INTO wallet_ledger_entries
          (id, wallet_id, transaction_id, direction, amount, currency, balance_before, balance_after, created_at)
        VALUES (?, ?, ?, 'CREDIT', 500.00, 'BRL', 110.00, 610.00, NOW())`,
-      [generateId(), wallet.id, driftTxId],
+      [generateId(), walletId, driftTxId],
     );
-    await conn.execute(
-      'UPDATE wallets SET balance_amount = 610.00, version = version + 1 WHERE id = ?',
-      [wallet.id],
-    );
+    await em.execute('UPDATE wallets SET balance_amount = 610.00, version = version + 1 WHERE id = ?', [walletId]);
+  }
 
-    const result = await reconcile.execute(wallet.id);
-    expect(result.difference.amount).toBe('0.00'); // the old two-way check would pass
-    expect(result.transactionMismatches).toBe(1);
-    expect(result.consistent).toBe(false);
-  });
-
-  it('flags a PROCESSED money-moving transaction without a ledger entry', async () => {
-    const { wallet, winId } = await walletWithWin();
-    const conn = orm.em.fork().getConnection();
+  /** PROCESSED money-moving transaction without any ledger entry. */
+  async function insertOrphan(em: { execute: (sql: string, params?: unknown[]) => Promise<unknown> }, winId: string) {
     const orphanId = generateId();
-    await conn.execute(
+    await em.execute(
       `INSERT INTO wager_transactions
          SELECT (jsonb_populate_record(t, jsonb_build_object(
                   'id', ?::text,
@@ -99,6 +86,44 @@ describe('Reconciliation — balance x ledger x transactions', () => {
            FROM wager_transactions t WHERE t.id = ?`,
       [orphanId, orphanId, orphanId, winId],
     );
+  }
+
+  /** Simulates data that predates the integrity triggers (or a privileged manual fix). */
+  const bypassingTriggers = (work: (em: any) => Promise<void>) =>
+    orm.em.fork().transactional(async (em) => {
+      await em.execute('SET LOCAL session_replication_role = replica');
+      await work(em);
+    });
+
+  it('PostgreSQL refuses a ledger entry that differs from its transaction (checked at COMMIT)', async () => {
+    const { wallet, winId } = await walletWithWin();
+    await expect(
+      orm.em.fork().transactional((em) => insertDrift(em, wallet.id, winId)),
+    ).rejects.toThrow('does not match transaction');
+    expect((await reconcile.execute(wallet.id)).consistent).toBe(true);
+  });
+
+  it('PostgreSQL refuses a PROCESSED money-moving transaction without a ledger entry', async () => {
+    const { wallet, winId } = await walletWithWin();
+    await expect(orm.em.fork().transactional((em) => insertOrphan(em, winId))).rejects.toThrow(
+      'has no ledger entry',
+    );
+    expect((await reconcile.execute(wallet.id)).consistent).toBe(true);
+  });
+
+  it('reconciliation still detects a ledger/transaction mismatch that bypassed the triggers', async () => {
+    const { wallet, winId } = await walletWithWin();
+    await bypassingTriggers((em) => insertDrift(em, wallet.id, winId));
+
+    const result = await reconcile.execute(wallet.id);
+    expect(result.difference.amount).toBe('0.00'); // balance == ledger sum: a two-way check would pass
+    expect(result.transactionMismatches).toBe(1);
+    expect(result.consistent).toBe(false);
+  });
+
+  it('reconciliation still detects a processed transaction without ledger that bypassed the triggers', async () => {
+    const { wallet, winId } = await walletWithWin();
+    await bypassingTriggers((em) => insertOrphan(em, winId));
 
     const result = await reconcile.execute(wallet.id);
     expect(result.difference.amount).toBe('0.00');
