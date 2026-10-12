@@ -1,0 +1,74 @@
+# Prometheus alerting rules for the wagering processor (scrape job name: "wagering").
+# Validated and unit-tested in CI: promtool check rules / promtool test rules (alerts.test.yml).
+groups:
+  - name: wagering-financial-integrity
+    rules:
+      - alert: WageringReconciliationDiscrepancy
+        expr: sum(increase(wagering_reconciliation_discrepancies_total[15m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: Wallet reconciliation found balance, ledger and transactions disagreeing
+          runbook: docs/OPERATIONS_RUNBOOK.md
+
+      - alert: WageringTransactionsFailed
+        expr: sum(increase(wagering_transactions_failed_total[10m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} wager transactions reached FAILED in the last 10 minutes"
+
+  - name: wagering-messaging
+    rules:
+      - alert: WageringDlqMessages
+        expr: sum(increase(wagering_dlq_messages_total[5m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: Messages were moved to the wager DLQ; inspect FailureReason before any redrive
+          runbook: docs/OPERATIONS_RUNBOOK.md
+
+      - alert: WageringOutboxLagHigh
+        expr: max(wagering_outbox_lag_seconds) > 60
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Oldest unpublished outbox event is {{ $value }}s old (SQS publishing stalled?)
+
+      - alert: WageringPendingReferencesHigh
+        expr: max(wagering_pending_references_current) > 100
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} reversals waiting for their reference transaction"
+
+  - name: wagering-availability
+    rules:
+      - alert: WageringConcurrencyExhausted
+        # Conflicts that were not retried = requests answered 503 after all attempts
+        expr: |
+          sum(increase(wagering_optimistic_lock_conflicts_total[5m]))
+            - sum(increase(wagering_retry_attempts_total{type=~"optimistic_lock|lock_timeout"}[5m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: Wallet contention exhausted retries (HTTP 503) in the last 5 minutes
+
+      - alert: WageringLatencyP95High
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(wagering_transaction_processing_duration_ms_bucket[5m]))) > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: p95 wager processing latency is {{ $value }}ms
+
+      - alert: WageringInstanceDown
+        expr: up{job="wagering"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Wagering instance {{ $labels.instance }} is not being scraped
