@@ -75,7 +75,7 @@ function normalizeIds(cmd: ProcessWagerCommand): ProcessWagerCommand {
 /** Unique constraints whose violation has a defined business meaning. */
 const UQ_REFERENCE_REVERSAL = 'uq_wager_reference_reversal';
 const UQ_PROVIDER_EXTERNAL = 'uq_wager_provider_external';
-const UQ_IDEMPOTENCY_KEY = 'uq_wager_idempotency_key';
+const UQ_IDEMPOTENCY_KEY = 'uq_wager_provider_idempotency_key';
 
 @Injectable()
 export class ProcessWagerTransactionUseCase {
@@ -193,7 +193,7 @@ export class ProcessWagerTransactionUseCase {
 
     // 2. Idempotency — payload must match for every existing state,
     // including PENDING_REFERENCE (otherwise a resend could alter amount/reference).
-    const existingTx = await wagers.findByIdempotencyKey(cmd.idempotencyKey);
+    const existingTx = await wagers.findByIdempotencyKey(cmd.providerId, cmd.idempotencyKey);
     if (existingTx && !existingTx.matchesPayload(payloadHash)) {
       throw new IdempotencyConflictError(cmd.idempotencyKey);
     }

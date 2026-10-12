@@ -1,7 +1,7 @@
 import { Entity, PrimaryKey, Property, Unique, Check, Index } from '@mikro-orm/core';
 
 @Entity({ tableName: 'wager_transactions' })
-@Unique({ properties: ['idempotencyKey'], name: 'uq_wager_idempotency_key' })
+@Unique({ properties: ['providerId', 'idempotencyKey'], name: 'uq_wager_provider_idempotency_key' })
 @Unique({ properties: ['providerId', 'externalTransactionId'], name: 'uq_wager_provider_external' })
 @Check({
   expression: "kind IN ('OPENING', 'BET', 'WIN', 'LOSS', 'REFUND', 'ROLLBACK')",

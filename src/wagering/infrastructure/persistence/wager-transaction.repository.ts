@@ -22,8 +22,8 @@ export class WagerTransactionRepository implements WagerTransactionRepositoryPor
     return entity ? this.toDomain(entity) : null;
   }
 
-  async findByIdempotencyKey(key: string): Promise<WagerTransaction | null> {
-    const entity = await this.em.findOne(WagerTransactionMikroEntity, { idempotencyKey: key });
+  async findByIdempotencyKey(providerId: string, key: string): Promise<WagerTransaction | null> {
+    const entity = await this.em.findOne(WagerTransactionMikroEntity, { providerId, idempotencyKey: key });
     return entity ? this.toDomain(entity) : null;
   }
 

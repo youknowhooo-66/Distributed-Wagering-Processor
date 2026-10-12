@@ -32,9 +32,9 @@ class InMemoryWagerRepository {
     return this.store.get(id) ?? null;
   }
 
-  async findByIdempotencyKey(key: string): Promise<WagerTransaction | null> {
+  async findByIdempotencyKey(providerId: string, key: string): Promise<WagerTransaction | null> {
     for (const tx of this.store.values()) {
-      if (tx.idempotencyKey === key) return tx;
+      if (tx.providerId === providerId && tx.idempotencyKey === key) return tx;
     }
     return null;
   }
