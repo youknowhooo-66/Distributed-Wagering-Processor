@@ -57,7 +57,7 @@ O sistema é construído sobre os princípios de **Domain-Driven Design (DDD)** 
 
 | SQLSTATE / origem | Erro de aplicação | Tratamento no caso de uso |
 |---|---|---|
-| `23505` + nome da constraint | `UniqueViolationError(constraint)` | `uq_wager_reference_reversal` → `REFERENCE_ALREADY_REVERSED`; `uq_wager_provider_external` → 409; `uq_wager_idempotency_key` → nova tentativa (replay ou 409) |
+| `23505` + nome da constraint | `UniqueViolationError(constraint)` | `uq_wager_reference_reversal` → `REFERENCE_ALREADY_REVERSED`; `uq_wager_provider_external` → 409; `uq_wager_provider_idempotency_key` → nova tentativa (replay ou 409) |
 | `55P03`, `40P01`, `40001`, `OptimisticLockError` | `ConcurrencyConflictError(reason)` | nova tentativa com jitter; esgotadas 6 tentativas → 503 + `Retry-After: 1` |
 
 ---
@@ -108,7 +108,7 @@ A unidade de concorrência é a **Wallet (`walletId`)**. Decisão e medições e
 2. **Ledger × transações:** cada lançamento corresponde a uma transação `PROCESSED` da mesma wallet, com o mesmo valor e moeda e direção compatível com o tipo (BET → DEBIT; WIN, REFUND, OPENING → CREDIT; LOSS nunca gera lançamento).
 3. **Transações × ledger:** toda transação `PROCESSED` que movimenta saldo (todas exceto LOSS) tem lançamento.
 
-O campo `transactionMismatches` informa quantas divergências do tipo 2 e 3 existem. A checagem 1 sozinha não detecta um lançamento com valor diferente da transação que o originou quando o saldo acompanha o ledger.
+As checagens 2 e 3 também são **impostas pelo PostgreSQL no commit** (gatilhos de restrição diferidos `trg_ledger_matches_transaction` e `trg_processed_transaction_has_ledger`): uma divergência desse tipo não chega a ser gravada. A reconciliação continua verificando (campo `transactionMismatches`) para dados anteriores aos gatilhos ou correções manuais privilegiadas. Custo medido dos gatilhos: 5–8% no p99 do teste de carga no processo.
 
 ---
 
@@ -116,7 +116,8 @@ O campo `transactionMismatches` informa quantas divergências do tipo 2 e 3 exis
 
 ### Idempotency-Key
 - O header HTTP `Idempotency-Key` (ou campo equivalente na mensagem SQS) é o identificador soberano da requisição.
-- É indexado com constraint `UNIQUE (idempotency_key)` no PostgreSQL.
+- É único **por provedor**: `UNIQUE (provider_id, idempotency_key)`. Cada provedor escolhe as próprias chaves; um provedor não ocupa, não reproduz e não conflita com a chave de outro.
+- `playerId` e `walletId` são normalizados para minúsculas na entrada do caso de uso (o PostgreSQL devolve UUIDs em minúsculas), então a mesma requisição em caixa diferente é um replay, não um conflito.
 
 ### Algoritmo de Payload Hash
 Para distinguir um **replay legítimo** de um **conflito de payload** sob a mesma chave:
@@ -143,7 +144,7 @@ Garantia de que eventos de integração **nunca são perdidos, nunca são public
 2. `outbox_messages.message_group_id` é uma coluna gerada (`data.walletId`, senão `aggregate_id`) e é também o `MessageGroupId` enviado ao SQS FIFO.
 3. A cada ciclo, o `OutboxPublisherWorker` seleciona os grupos cuja mensagem **mais antiga** não publicada já está liberada (fora de backoff).
 4. Para cada grupo, tenta `pg_try_advisory_xact_lock(hashtextextended('outbox:' || grupo, 0))`. Se outro publisher detém o grupo, o grupo é pulado nesse ciclo; assim cada wallet é publicada por **um publisher por vez**, com várias instâncias em paralelo em grupos diferentes.
-5. As mensagens do grupo são publicadas em ordem `(occurred_at, id)` e a publicação **para na primeira mensagem em backoff ou com falha**: um evento posterior nunca ultrapassa um anterior.
+5. As mensagens do grupo são publicadas em ordem `(occurred_at, id)` e a publicação **para na primeira mensagem em backoff ou com falha**: um evento posterior nunca ultrapassa um anterior. Grupos diferentes (até 8) são publicados em paralelo, e o publisher repete o ciclo imediatamente enquanto houver trabalho (espera 1 s só quando o outbox está vazio).
 6. Somente após a confirmação do envio ao SQS a mensagem é marcada com `published_at`.
 7. Falha temporária do SQS agenda nova tentativa com **backoff exponencial** (`2s`, `4s`, `8s`... até `60s`).
 
@@ -269,6 +270,12 @@ Todas as alterações estruturais são versionadas como migrações bidirecionai
    - Adiciona a coluna gerada `outbox_messages.message_group_id` e o índice parcial `idx_outbox_group_unpublished` para a publicação ordenada por wallet (seção 7).
 7. **`Migration20261012000002_retention_indexes.ts`**:
    - Índices parciais `idx_outbox_published_at` e `idx_inbox_processed_at` para o expurgo por idade sem varrer as tabelas (seção 8).
+8. **`Migration20261012000003_provider_scoped_idempotency.ts`**:
+   - Troca `uq_wager_idempotency_key (idempotency_key)` por `uq_wager_provider_idempotency_key (provider_id, idempotency_key)`.
+9. **`Migration20261012000004_ledger_transaction_integrity.ts`**:
+   - Gatilhos de restrição diferidos: todo lançamento corresponde a uma transação `PROCESSED` da mesma wallet, com mesmo valor, moeda e direção compatível; toda transação `PROCESSED` que movimenta saldo tem lançamento.
+10. **`Migration20261012000005_wager_wallet_index.ts`**:
+   - Índice `idx_wager_transactions_wallet`: a chave estrangeira `wallet_id` não tinha índice e as consultas por wallet (reconciliação) varriam a tabela inteira.
 
 ---
 

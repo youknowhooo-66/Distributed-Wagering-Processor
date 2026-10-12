@@ -43,6 +43,7 @@ Check constraints:
 Foreign-key constraints:
     "wallet_ledger_entries_wallet_id_fkey" FOREIGN KEY (wallet_id) REFERENCES wallets(id)
 Triggers:
+    trg_ledger_matches_transaction AFTER INSERT ON wallet_ledger_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION ledger_entry_matches_transaction()
     trg_wallet_ledger_immutable BEFORE DELETE OR UPDATE ON wallet_ledger_entries FOR EACH ROW EXECUTE FUNCTION trg_prevent_ledger_mutation()
 
                                          Table "public.wager_transactions"
@@ -73,8 +74,9 @@ Indexes:
     "wager_transactions_pkey" PRIMARY KEY, btree (id)
     "idx_wager_pending_reference" btree (status, next_retry_at) WHERE status::text = 'PENDING_REFERENCE'::text
     "idx_wager_provider_external_lookup" btree (provider_id, external_transaction_id)
-    "uq_wager_idempotency_key" UNIQUE CONSTRAINT, btree (idempotency_key)
+    "idx_wager_transactions_wallet" btree (wallet_id)
     "uq_wager_provider_external" UNIQUE CONSTRAINT, btree (provider_id, external_transaction_id)
+    "uq_wager_provider_idempotency_key" UNIQUE CONSTRAINT, btree (provider_id, idempotency_key)
     "uq_wager_reference_reversal" UNIQUE, btree (reference_transaction_id) WHERE status::text = 'PROCESSED'::text AND (kind::text = ANY (ARRAY['REFUND'::character varying, 'ROLLBACK'::character varying]::text[]))
 Check constraints:
     "chk_wager_amount_non_negative" CHECK (amount >= 0::numeric)
@@ -83,6 +85,8 @@ Check constraints:
     "chk_wager_status" CHECK (status::text = ANY (ARRAY['PENDING'::character varying, 'PENDING_REFERENCE'::character varying, 'PROCESSED'::character varying, 'REJECTED'::character varying, 'FAILED'::character varying]::text[]))
 Foreign-key constraints:
     "wager_transactions_wallet_id_fkey" FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+Triggers:
+    trg_processed_transaction_has_ledger AFTER INSERT OR UPDATE OF status ON wager_transactions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION processed_transaction_has_ledger()
 
                        Table "public.inbox_messages"
     Column     |           Type           | Collation | Nullable | Default 
@@ -116,8 +120,11 @@ Indexes:
 Check constraints:
     "chk_outbox_attempts" CHECK (attempts >= 0)
 
-  event_object_table   |        trigger_name         | action_timing | event_manipulation 
------------------------+-----------------------------+---------------+--------------------
- wallet_ledger_entries | trg_wallet_ledger_immutable | BEFORE        | DELETE
- wallet_ledger_entries | trg_wallet_ledger_immutable | BEFORE        | UPDATE
-(2 rows)
+  event_object_table   |             trigger_name             | action_timing | event_manipulation 
+-----------------------+--------------------------------------+---------------+--------------------
+ wager_transactions    | trg_processed_transaction_has_ledger | AFTER         | INSERT
+ wallet_ledger_entries | trg_ledger_matches_transaction       | AFTER         | INSERT
+ wallet_ledger_entries | trg_wallet_ledger_immutable          | BEFORE        | DELETE
+ wager_transactions    | trg_processed_transaction_has_ledger | AFTER         | UPDATE
+ wallet_ledger_entries | trg_wallet_ledger_immutable          | BEFORE        | UPDATE
+(5 rows)

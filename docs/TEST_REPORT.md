@@ -12,42 +12,43 @@ Ambiente de Execução:
 
 ## 1. Resumo das Suítes de Teste Automatizadas
 
-> Por suíte: unitários 75, integração 73, concorrência 6, carga 4. Tempos de uma execução isolada por arquivo.
+> Por suíte: unitários 75, integração 77, concorrência 6, carga 4. Tempos de uma execução isolada por arquivo.
 >
 > **Pré-condição**: Os contêineres `app-1`, `app-2` e `app-3` devem estar parados antes de executar as suítes de integração e concorrência. Com os apps em execução, a fila SQS é consumida em paralelo, causando colisão de `MessageDeduplicationId` no DLQ FIFO e falha intermitente no teste de poison message.
 > Comando de parada: `docker compose stop app-1 app-2 app-3`.
 
 | Suíte | Arquivo | Testes | Sucesso | Falhas | Duração |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| Concorrência e reversão distribuída | `src/test/concurrency/concurrent-bets.spec.ts` | 5 | 5 | 0 | 790.00ms |
-| 3 processos Bun na mesma wallet | `src/test/concurrency/multiprocess-concurrency.spec.ts` | 1 | 1 | 0 | 808.00ms |
-| Inicialização do AppModule completo | `src/test/integration/bootstrap.spec.ts` | 1 | 1 | 0 | 403.00ms |
-| Deduplicação inbox multi-instância | `src/test/integration/consumer-inbox-dedup.spec.ts` | 1 | 1 | 0 | 335.00ms |
-| Redrive seletivo da DLQ (filas FIFO dedicadas) | `src/test/integration/dlq-redrive.spec.ts` | 1 | 1 | 0 | 4.19s |
-| Transações FAILED, outbox e métrica | `src/test/integration/failed-transaction.spec.ts` | 1 | 1 | 0 | 418.00ms |
-| Endpoints HTTP (Nest real) | `src/test/integration/http-endpoints.spec.ts` | 14 | 14 | 0 | 457.00ms |
-| Validação HTTP → 400 | `src/test/integration/http-validation.spec.ts` | 8 | 8 | 0 | 304.00ms |
-| Invariantes e resiliência (crash, SIGTERM, DLQ, 503) | `src/test/integration/invariants-resilience.spec.ts` | 16 | 16 | 0 | 8.03s |
-| Ordem FIFO, DLQ sem perda, ordem do outbox | `src/test/integration/messaging-ordering.spec.ts` | 5 | 5 | 0 | 601.00ms |
-| Métricas Prometheus sob tráfego | `src/test/integration/metrics-traffic.spec.ts` | 1 | 1 | 0 | 328.00ms |
-| Métricas de pendências e reconciliação atualizadas | `src/test/integration/metrics-wiring.spec.ts` | 2 | 2 | 0 | 365.00ms |
-| Outbox com publishers concorrentes | `src/test/integration/outbox-publisher.spec.ts` | 1 | 1 | 0 | 236.00ms |
-| Idempotência em PENDING_REFERENCE | `src/test/integration/pending-reference-idempotency.spec.ts` | 4 | 4 | 0 | 337.00ms |
-| Corrida de reversões pendentes | `src/test/integration/pending-reference-reversal-race.spec.ts` | 1 | 1 | 0 | 364.00ms |
-| Reconciliação em três vias | `src/test/integration/reconciliation-three-way.spec.ts` | 3 | 3 | 0 | 307.00ms |
-| Retenção de outbox e inbox | `src/test/integration/retention.spec.ts` | 2 | 2 | 0 | 198.00ms |
-| Consumer SQS (DLQ, inbox, ack) | `src/test/integration/sqs-consumer.spec.ts` | 2 | 2 | 0 | 308.00ms |
-| Casos de uso core | `src/test/integration/use-cases.spec.ts` | 8 | 8 | 0 | 415.00ms |
-| UUID em maiúsculas (referência e replay) | `src/test/integration/uuid-case.spec.ts` | 2 | 2 | 0 | 208.00ms |
-| Carga: 50 BETs concorrentes | `src/test/load/load-50-bets.spec.ts` | 4 | 4 | 0 | 3.21s |
-| Hash canônico SHA-256 | `src/test/unit/canonical-hash.spec.ts` | 2 | 2 | 0 | 7.00ms |
-| Value object Money | `src/test/unit/money.spec.ts` | 15 | 15 | 0 | 6.00ms |
-| Pré-carga do ambiente de teste | `src/test/unit/preload-check.spec.ts` | 1 | 1 | 0 | 3.00ms |
-| Regras de referência e reversão | `src/test/unit/validate-reference.spec.ts` | 17 | 17 | 0 | 9.00ms |
-| Validação de contrato HTTP/SQS | `src/test/unit/wager-payload.validator.spec.ts` | 19 | 19 | 0 | 5.00ms |
-| Máquina de estados WagerTransaction | `src/test/unit/wager-transaction.spec.ts` | 13 | 13 | 0 | 5.00ms |
-| Agregado Wallet | `src/test/unit/wallet.spec.ts` | 8 | 8 | 0 | 9.00ms |
-| **Total** | **28 arquivos** | **158** | **158** | **0** | |
+| Concorrência e reversão distribuída | `src/test/concurrency/concurrent-bets.spec.ts` | 5 | 5 | 0 | 768.00ms |
+| 3 processos Bun na mesma wallet | `src/test/concurrency/multiprocess-concurrency.spec.ts` | 1 | 1 | 0 | 741.00ms |
+| Inicialização do AppModule completo | `src/test/integration/bootstrap.spec.ts` | 1 | 1 | 0 | 429.00ms |
+| Deduplicação inbox multi-instância | `src/test/integration/consumer-inbox-dedup.spec.ts` | 1 | 1 | 0 | 418.00ms |
+| Redrive seletivo da DLQ (filas FIFO dedicadas) | `src/test/integration/dlq-redrive.spec.ts` | 1 | 1 | 0 | 4.14s |
+| Transações FAILED, outbox e métrica | `src/test/integration/failed-transaction.spec.ts` | 1 | 1 | 0 | 605.00ms |
+| Endpoints HTTP (Nest real) | `src/test/integration/http-endpoints.spec.ts` | 14 | 14 | 0 | 452.00ms |
+| Validação HTTP → 400 | `src/test/integration/http-validation.spec.ts` | 8 | 8 | 0 | 320.00ms |
+| Invariantes e resiliência (crash, SIGTERM, DLQ, 503) | `src/test/integration/invariants-resilience.spec.ts` | 16 | 16 | 0 | 7.46s |
+| Ordem FIFO, DLQ sem perda, ordem do outbox | `src/test/integration/messaging-ordering.spec.ts` | 5 | 5 | 0 | 526.00ms |
+| Métricas Prometheus sob tráfego | `src/test/integration/metrics-traffic.spec.ts` | 1 | 1 | 0 | 340.00ms |
+| Métricas de pendências e reconciliação atualizadas | `src/test/integration/metrics-wiring.spec.ts` | 2 | 2 | 0 | 344.00ms |
+| Outbox com publishers concorrentes | `src/test/integration/outbox-publisher.spec.ts` | 1 | 1 | 0 | 258.00ms |
+| Idempotência em PENDING_REFERENCE | `src/test/integration/pending-reference-idempotency.spec.ts` | 4 | 4 | 0 | 341.00ms |
+| Corrida de reversões pendentes | `src/test/integration/pending-reference-reversal-race.spec.ts` | 1 | 1 | 0 | 385.00ms |
+| Idempotência por provedor | `src/test/integration/provider-scoped-idempotency.spec.ts` | 2 | 2 | 0 | 245.00ms |
+| Reconciliação em três vias e gatilhos de integridade | `src/test/integration/reconciliation-three-way.spec.ts` | 5 | 5 | 0 | 293.00ms |
+| Retenção de outbox e inbox | `src/test/integration/retention.spec.ts` | 2 | 2 | 0 | 202.00ms |
+| Consumer SQS (DLQ, inbox, ack) | `src/test/integration/sqs-consumer.spec.ts` | 2 | 2 | 0 | 296.00ms |
+| Casos de uso core | `src/test/integration/use-cases.spec.ts` | 8 | 8 | 0 | 359.00ms |
+| UUID em maiúsculas (referência e replay) | `src/test/integration/uuid-case.spec.ts` | 2 | 2 | 0 | 236.00ms |
+| Carga: 50 BETs concorrentes | `src/test/load/load-50-bets.spec.ts` | 4 | 4 | 0 | 4.66s |
+| Hash canônico SHA-256 | `src/test/unit/canonical-hash.spec.ts` | 2 | 2 | 0 | 9.00ms |
+| Value object Money | `src/test/unit/money.spec.ts` | 15 | 15 | 0 | 7.00ms |
+| Pré-carga do ambiente de teste | `src/test/unit/preload-check.spec.ts` | 1 | 1 | 0 | 4.00ms |
+| Regras de referência e reversão | `src/test/unit/validate-reference.spec.ts` | 17 | 17 | 0 | 11.00ms |
+| Validação de contrato HTTP/SQS | `src/test/unit/wager-payload.validator.spec.ts` | 19 | 19 | 0 | 7.00ms |
+| Máquina de estados WagerTransaction | `src/test/unit/wager-transaction.spec.ts` | 13 | 13 | 0 | 7.00ms |
+| Agregado Wallet | `src/test/unit/wallet.spec.ts` | 8 | 8 | 0 | 12.00ms |
+| **Total** | **29 arquivos** | **162** | **162** | **0** | |
 
 ---
 

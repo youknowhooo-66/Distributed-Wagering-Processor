@@ -76,13 +76,13 @@ Os testes rodam contra PostgreSQL e LocalStack reais (pré-requisito: passos 2 e
 # Checagem de tipos (código de produção, testes e scripts)
 bun run typecheck
 
-# Todos os testes (158)
+# Todos os testes (162)
 bun run test
 
 # Unitários (75): Money, Wallet, WagerTransaction, hash canônico, validação de contrato
 bun run test:unit
 
-# Integração (73): atomicidade, idempotência, reversões, reconciliação, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP
+# Integração (77): atomicidade, idempotência, reversões, reconciliação, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP
 bun run test:int
 
 # Concorrência (6): 3 processos disputando a mesma wallet, 50 requisições paralelas

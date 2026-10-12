@@ -18,11 +18,11 @@ docker compose up -d --wait postgres localstack
 # 2. Executar migrações do banco
 bun run migration:up
 
-# 3. Executar suíte completa de testes (158 testes: 75 unit + 73 integração + 6 concorrência + 4 carga)
+# 3. Executar suíte completa de testes (162 testes: 75 unit + 77 integração + 6 concorrência + 4 carga)
 # Os scripts de teste definem ENABLE_BACKGROUND_POLL=false automaticamente
 bun run typecheck    # tipos de produção, testes e scripts
 bun run test:unit    # 75 testes — domínio puro e validação de contrato, sem I/O
-bun run test:int     # 73 testes — PostgreSQL + LocalStack SQS reais
+bun run test:int     # 77 testes — PostgreSQL + LocalStack SQS reais
 bun run test:e2e     # 6 testes  — paralelismo real multi-processo
 bun run test:load    # 4 testes  — 50 BETs concorrentes, invariantes de saldo
 

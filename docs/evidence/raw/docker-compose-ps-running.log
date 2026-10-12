@@ -1,6 +1,6 @@
-NAME                IMAGE                             COMMAND                  SERVICE      CREATED         STATUS                       PORTS
-jungle-app-1        jungle-wagering-processor:local   "/usr/local/bin/dock…"   app-1        6 seconds ago   Up 5 seconds (healthy)       0.0.0.0:3011->3000/tcp, [::]:3011->3000/tcp
-jungle-app-2        jungle-wagering-processor:local   "/usr/local/bin/dock…"   app-2        6 seconds ago   Up 5 seconds (healthy)       0.0.0.0:3012->3000/tcp, [::]:3012->3000/tcp
-jungle-app-3        jungle-wagering-processor:local   "/usr/local/bin/dock…"   app-3        6 seconds ago   Up 5 seconds (healthy)       0.0.0.0:3013->3000/tcp, [::]:3013->3000/tcp
-jungle-localstack   localstack/localstack:3           "docker-entrypoint.sh"   localstack   2 hours ago     Up About an hour (healthy)   0.0.0.0:4566->4566/tcp, [::]:4566->4566/tcp
-jungle-postgres     postgres:16-alpine                "docker-entrypoint.s…"   postgres     13 hours ago    Up 2 hours (healthy)         0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+NAME                IMAGE                             COMMAND                  SERVICE      CREATED          STATUS                    PORTS
+jungle-app-1        jungle-wagering-processor:local   "/usr/local/bin/dock…"   app-1        7 seconds ago    Up 5 seconds (healthy)    0.0.0.0:3011->3000/tcp, [::]:3011->3000/tcp
+jungle-app-2        jungle-wagering-processor:local   "/usr/local/bin/dock…"   app-2        7 seconds ago    Up 5 seconds (healthy)    0.0.0.0:3012->3000/tcp, [::]:3012->3000/tcp
+jungle-app-3        jungle-wagering-processor:local   "/usr/local/bin/dock…"   app-3        7 seconds ago    Up 5 seconds (healthy)    0.0.0.0:3013->3000/tcp, [::]:3013->3000/tcp
+jungle-localstack   localstack/localstack:3           "docker-entrypoint.sh"   localstack   3 hours ago      Up 2 hours (healthy)      0.0.0.0:4566->4566/tcp, [::]:4566->4566/tcp
+jungle-postgres     postgres:16-alpine                "docker-entrypoint.s…"   postgres     23 minutes ago   Up 23 minutes (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
