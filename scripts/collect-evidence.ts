@@ -217,7 +217,8 @@ for (const r of loadRecords) {
 
 loadSummaryMd += `\n### Observações de Concorrência
 - Em todas as 10 execuções, o saldo final foi idêntico à soma das transações processadas vezes 10.00 BRL.
-- Os retornos 503 decorrem comprovadamente de colisões de versionamento otimista (\`optimistic_lock\`) que excederam o limite de 6 retentativas.
+- Medição no processo (caso de uso direto, sem HTTP): as 50 apostas disputam o mesmo lock de linha da wallet. Lock Conflicts e Retries são os deltas dos contadores Prometheus durante a rodada; um 503 só ocorre quando um conflito esgota as 6 tentativas.
+- Latência percebida pelo cliente (HTTP, 3 réplicas): \`bun run load:http\`, resultados em \`docs/TEST_REPORT.md\`.
 `;
 fs.writeFileSync(path.join(EVIDENCE_DIR, 'load-summary.md'), loadSummaryMd);
 console.log('Salvo docs/evidence/load-summary.md');

@@ -77,7 +77,15 @@ describe('Load Test — 50 Distinct Concurrent Bets on Single Wallet', () => {
       };
     });
 
+    const counterTotal = async (metric: typeof optimisticLockConflictsTotal | typeof retryAttemptsTotal) =>
+      (await metric.get()).values.reduce((acc, v) => acc + v.value, 0);
+    const conflictsBefore = await counterTotal(optimisticLockConflictsTotal);
+    const retriesBefore = await counterTotal(retryAttemptsTotal);
+
     await Promise.all(tasks.map((t) => t()));
+
+    const lockConflicts = (await counterTotal(optimisticLockConflictsTotal)) - conflictsBefore;
+    const retryAttempts = (await counterTotal(retryAttemptsTotal)) - retriesBefore;
 
     latencies.sort((a, b) => a - b);
     const p50 = latencies[Math.floor(latencies.length * 0.50)] || 0;
@@ -101,6 +109,8 @@ describe('Load Test — 50 Distinct Concurrent Bets on Single Wallet', () => {
       p50,
       p95,
       p99,
+      lockConflicts,
+      retryAttempts,
       expectedBalance,
       ledger,
       reconcileResult,
@@ -111,7 +121,7 @@ describe('Load Test — 50 Distinct Concurrent Bets on Single Wallet', () => {
     const res = await runConcurrentBets(50, '5000.00');
 
     console.log(
-      `[LOAD TEST METRICS] Total: 50 | PROCESSED: ${res.processedCount} | 503 Concurrency Exceeded: ${res.error503Count} | p50: ${res.p50.toFixed(2)}ms | p95: ${res.p95.toFixed(2)}ms | p99: ${res.p99.toFixed(2)}ms`,
+      `[LOAD TEST METRICS] Total: 50 | PROCESSED: ${res.processedCount} | 503 Concurrency Exceeded: ${res.error503Count} | p50: ${res.p50.toFixed(2)}ms | p95: ${res.p95.toFixed(2)}ms | p99: ${res.p99.toFixed(2)}ms | Lock Conflicts: ${res.lockConflicts} | Retry Attempts: ${res.retryAttempts}`,
     );
 
     expect(res.processedCount).toBe(50);
