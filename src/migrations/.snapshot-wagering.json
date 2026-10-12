@@ -384,7 +384,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "unique": true,
+          "unique": false,
           "length": 512,
           "precision": null,
           "scale": null,
@@ -707,12 +707,12 @@
         },
         {
           "columnNames": [
-            "idempotency_key"
+            "wallet_id"
           ],
           "composite": false,
-          "constraint": true,
-          "keyName": "uq_wager_idempotency_key",
-          "unique": true,
+          "constraint": false,
+          "keyName": "idx_wager_transactions_wallet",
+          "unique": false,
           "primary": false
         },
         {
@@ -723,6 +723,17 @@
           "composite": true,
           "constraint": true,
           "keyName": "uq_wager_provider_external",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "provider_id",
+            "idempotency_key"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "uq_wager_provider_idempotency_key",
           "unique": true,
           "primary": false
         },
