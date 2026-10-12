@@ -1,0 +1,2 @@
+DB_TX: [{"id":"01a12e53-d1c4-7099-8729-b3f44e0c803e","status":"PROCESSED","amount":"30.00"}]
+DB_INBOX: [{"consumer_name":"wager-transactions-consumer","message_id":"bg-evidence-1791778607535"}]

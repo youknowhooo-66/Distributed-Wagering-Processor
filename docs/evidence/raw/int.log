@@ -1,0 +1,1079 @@
+bun test v1.4.2 (744846f84)
+[32m[Nest] 12045  - [39m10/12/2026, 4:15:32 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-ad64-76fb-b978-8bcf1fcce731 verified against 1 ledger entries.[39m
+[32m[Nest] 12045  - [39m10/12/2026, 4:15:32 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-adac-75e4-a3a9-3a21fec4f974 verified against 3 ledger entries.[39m
+[32m[Nest] 12045  - [39m10/12/2026, 4:15:32 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-add6-753e-afb6-f86edd2bde32 verified against 3 ledger entries.[39m
+[32m[Nest] 12045  - [39m10/12/2026, 4:15:32 AM [32m    LOG[39m [38;5;3m[RetryPendingReferencesUseCase] [39m[32mSuccessfully resolved pending reference for tx 01a12e52-ae36-75ad-b145-6e1efd80c7ff[39m
+[32m[Nest] 12045  - [39m10/12/2026, 4:15:32 AM [32m    LOG[39m [38;5;3m[RetryPendingReferencesUseCase] [39m[32mSuccessfully resolved pending reference for tx 01a12e52-ae39-7588-8c83-4ef4fc994933[39m
+[32m[Nest] 12045  - [39m10/12/2026, 4:15:32 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-ae32-7742-b5b7-30fbab5e0269 verified against 5 ledger entries.[39m
+[32m[Nest] 12045  - [39m10/12/2026, 4:15:32 AM [32m    LOG[39m [38;5;3m[PurgeProcessedMessagesUseCase] [39m[32mRetention purge: 1 outbox, 1 inbox records removed[39m
+[04:15:37.324] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-KZaiFNgfZZvnbrXDcmyd08x999Q\""
+      }
+    }
+    [35mresponseTime[39m: 23
+[04:15:37.813] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-9RFWwEvLyFAw6vbFTSiZqjrKLqU\""
+      }
+    }
+    [35mresponseTime[39m: 23
+[04:15:37.814] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c155-7468-960b-0476890d174c"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "111",
+        "etag": "W/\"6f-Dvso/TGBqaukzvMww3DiKdkOHB0\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[04:15:37.815] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c156-7228-9d3d-94ee8e2fbe0e"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "97",
+        "etag": "W/\"61-dQgl/n7BOuEzuhZHZx4cvT1gTIg\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[04:15:37.815] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c157-712b-8237-0374d114fc48"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "142",
+        "etag": "W/\"8e-J/lrp/KF2AC9fAgU4jTLexu7gfI\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:37.816] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c157-712b-8237-07faf3ffbad6"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "93",
+        "etag": "W/\"5d-9qgQc0D68hm6vfRyvbbiCj7bLWo\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:37.816] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c158-737a-9eaa-ae2b83fb3653"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "82",
+        "etag": "W/\"52-p/ZPXGPb9CPs5qQmrh6oOAlKAEI\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:37.817] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c158-737a-9eaa-b075bd8bec28"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "116",
+        "etag": "W/\"74-bhd3CGQFbG0eM30QlXQa7jBRePI\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:37.817] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "101",
+        "etag": "W/\"65-pXoACoos6tV8uatx0QbJZistXMs\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:37.832] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c159-76fe-b469-1b46410a8c0a"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "148",
+        "etag": "W/\"94-FgH6Lfd0lbWFMgxYnYjEDTxsC4s\""
+      }
+    }
+    [35mresponseTime[39m: 14
+[04:15:37.841] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-ext-01a12e52-c168-74a3-b677-dfa15183e2e1"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "148",
+        "etag": "W/\"94-vv7uPkebc4Lh7rm7Sv1c2/fK1lM\""
+      }
+    }
+    [35mresponseTime[39m: 8
+[04:15:37.889] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-aFxxg7oWlzQ00n8md10bLz0PuII\""
+      }
+    }
+    [35mresponseTime[39m: 16
+[04:15:38.194] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-9eDRNhRt7gwKV6tfWZNJdWIn2W8\""
+      }
+    }
+    [35mresponseTime[39m: 8
+[04:15:38.324] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/health/live",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "54",
+        "etag": "W/\"36-mipDRBiIIEJXaV6Uxo3i3OEugFQ\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:38.329] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/health/ready",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "144",
+        "etag": "W/\"90-y7dnKIlgaKNt5q2oOLDsE37WClA\""
+      }
+    }
+    [35mresponseTime[39m: 5
+[04:15:38.342] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/metrics",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "text/plain; charset=utf-8; version=0.0.4",
+        "content-length": "16739",
+        "etag": "W/\"4163-8Gg44/ijgGzRfi1UZZ8R03BAtxw\""
+      }
+    }
+    [35mresponseTime[39m: 13
+[04:15:38.350] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-d41dDVXMVs1/dUakruMzc+VOV98\""
+      }
+    }
+    [35mresponseTime[39m: 7
+[04:15:38.354] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-L5JNT+weWUEMWEYXhKnUn/aaOCw\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.355] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/wallets/01a12e52-c36f-7000-bc41-03b4e199264f",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-L5JNT+weWUEMWEYXhKnUn/aaOCw\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[04:15:38.358] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-vVtboSR96iLOJFTr8LSag3rQWzI\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.360] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/wallets/01a12e52-c374-7078-822f-83df2859dce9/ledger?limit=10",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "390",
+        "etag": "W/\"186-/OdYNIW0jTRgVkf6pqvHGqf9YR4\""
+      }
+    }
+    [35mresponseTime[39m: 2
+[04:15:38.363] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-6b96NGfC3s97GN5Lmoz3m8SLFhM\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.378] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "POST",
+      "url": "/wallets/01a12e52-c379-716b-9751-c549c9943543/reconciliation",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "272",
+        "etag": "W/\"110-cLCXuPGL0RKbCj1ortRCHeduwCk\""
+      }
+    }
+    [35mresponseTime[39m: 15
+[04:15:38.382] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-2FXxGfwg6yl8KxsLDRevbwX2xTc\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.387] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-bet-http-01a12e52-c38e-7462-8bfa-910ae9c1359f"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "148",
+        "etag": "W/\"94-AmYpbTjRp19yFP1hmbQyLjSaxKI\""
+      }
+    }
+    [35mresponseTime[39m: 5
+[04:15:38.388] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/wagering/transactions/01a12e52-c390-732b-b60d-3dad374d2cc4",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "600",
+        "etag": "W/\"258-JyixW77H0ojq6Y1CqyfEqwEUAMY\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[04:15:38.389] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/providers/prov-http-suite/wagering/transactions/bet-http-01a12e52-c38e-7462-8bfa-910ae9c1359f",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "600",
+        "etag": "W/\"258-JyixW77H0ojq6Y1CqyfEqwEUAMY\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[04:15:38.392] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-OkVX0C2m5luujFDJvI4wsIr0aSg\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.395] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-refund-ooo-01a12e52-c398-706d-ad94-8c573dc1dede"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 202,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "157",
+        "etag": "W/\"9d-6CIXBZDqfZMGiU+tbOHr7NF5HEw\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.398] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "153",
+        "etag": "W/\"99-E+SCLmc66bK0GT/p/FHiYSbm+ws\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.401] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-bet-excess-01a12e52-c39e-7659-9b9b-bf4ca4764b53"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 422,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "184",
+        "etag": "W/\"b8-7gNJwiD43JvT8rZSzchKeUxX+qQ\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.404] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "153",
+        "etag": "W/\"99-g9wzMABlXf1gtVK2f2/O3UBOnpo\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.408] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-bet-r9-01a12e52-c3a4-7620-a989-fb1cda4e6166"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "147",
+        "etag": "W/\"93-YHSTU+MBb4ICppSnmBNNOrtARSc\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.412] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-win-r9-01a12e52-c3a8-7421-8ed5-9979030773f8"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "149",
+        "etag": "W/\"95-VMWq2Q46noWx1pkRVYbJ8Pdn35U\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.416] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-saque-r9-01a12e52-c3ac-71f9-af74-ba31c6c58a9b"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "147",
+        "etag": "W/\"93-Tqi/rB8vgXUDrcLjMke78Bq62iQ\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.420] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-rollback-r9-01a12e52-c3b0-769c-aa7a-a3af3a6a657b"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 422,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "192",
+        "etag": "W/\"c0-179HHMACn75EXzUsGelXZ585PCg\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.420] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 24,
+      "method": "GET",
+      "url": "/wallets/01a12e52-c3a2-71ff-bbdf-8920d71f2af5",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "152",
+        "etag": "W/\"98-u0x56hYPY/A8/5GGakikXZljtVU\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:38.433] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 25,
+      "method": "POST",
+      "url": "/wallets/01a12e52-c3a2-71ff-bbdf-8920d71f2af5/reconciliation",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "268",
+        "etag": "W/\"10c-zbliEl77DpQHWPJjEuu2UVaKH2s\""
+      }
+    }
+    [35mresponseTime[39m: 12
+[04:15:38.433] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 26,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 400,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "378",
+        "etag": "W/\"17a-VUPeTS06XWhCQRYaH5co+4otUfg\""
+      }
+    }
+    [35mresponseTime[39m: 0
+[04:15:38.434] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 27,
+      "method": "GET",
+      "url": "/wallets/01a12e52-c3c1-747d-bf0f-a250277b4817",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 404,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "105",
+        "etag": "W/\"69-ti29PYEhQ9RzW3CYGxXfxe7wk74\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[04:15:38.438] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 28,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-jD+bQZIHcRdRgZ4ViWxb1OHQ9lc\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.442] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 29,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-shared-01a12e52-c3c6-745f-8126-4e3733b73716"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "148",
+        "etag": "W/\"94-i6kEBNO77aj3TDxDtvEIhZVSD7A\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.444] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 30,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-shared-01a12e52-c3c6-745f-8126-4e3733b73716"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 409,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "177",
+        "etag": "W/\"b1-qrPbmhM+1rdeGET8aFjfp8w6lBo\""
+      }
+    }
+    [35mresponseTime[39m: 2
+[04:15:38.466] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/health/ready",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "144",
+        "etag": "W/\"90-7IvB2RTETbSEI2M9vp1IiwPVGd4\""
+      }
+    }
+    [35mresponseTime[39m: 4
+[04:15:38.492] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-ZZaFeV2DWvofZYVJX/ulYOPqQNo\""
+      }
+    }
+    [35mresponseTime[39m: 8
+[04:15:38.497] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-metric-bet-01a12e52-c3fc-7658-9a8b-e9f749c4ea62"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "148",
+        "etag": "W/\"94-+3dG5HsrP0dWnekT5XKGNUmYTqU\""
+      }
+    }
+    [35mresponseTime[39m: 5
+[04:15:38.499] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-metric-bet-01a12e52-c3fc-7658-9a8b-e9f749c4ea62"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "166",
+        "etag": "W/\"a6-ws0WuuVD9ZutV5d3MTLh4EPPoe0\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[04:15:38.502] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-metric-rej-01a12e52-c403-7118-9b9c-173d8d7a4f48"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 422,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "184",
+        "etag": "W/\"b8-JvBJf/8H0IgZKvmwo1Oor2mqBY4\""
+      }
+    }
+    [35mresponseTime[39m: 2
+[04:15:38.505] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-metric-ooo-01a12e52-c406-71d0-88e6-a020a7b571d9"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 202,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "156",
+        "etag": "W/\"9c-fFJA+K5dvFqEAauZjyJWVQMpto0\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:15:38.516] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/metrics",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "text/plain; charset=utf-8; version=0.0.4",
+        "content-length": "20685",
+        "etag": "W/\"50cd-Neu/Sos+PkndfH03IKK5/C9iVdw\""
+      }
+    }
+    [35mresponseTime[39m: 11
+[04:15:42.994] [32mINFO[39m (12045): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-stublock-01a12e52-d41e-774e-8a7d-81c5a77cdc20"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 503,
+      "headers": {
+        "x-powered-by": "Express",
+        "retry-after": "1",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "80",
+        "etag": "W/\"50-ktWnsrv4K8dvvKQ2VSVczucyyHM\""
+      }
+    }
+    [35mresponseTime[39m: 370
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (./node_modules/pino-http/logger.js:115:43)
+              at emit (node:events:118:23)
+              at <anonymous> (node:_http_server:1686:16)
+              at processTicksAndRejections (native:7:39)
+    }
+[04:15:43.599] [32mINFO[39m (12045): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-realdetlock-01a12e52-d5ae-75ae-9eb4-5cd76744ec47"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 503,
+      "headers": {
+        "x-powered-by": "Express",
+        "retry-after": "1",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "80",
+        "etag": "W/\"50-ktWnsrv4K8dvvKQ2VSVczucyyHM\""
+      }
+    }
+    [35mresponseTime[39m: 576
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (./node_modules/pino-http/logger.js:115:43)
+              at emit (node:events:118:23)
+              at <anonymous> (node:_http_server:1686:16)
+              at processTicksAndRejections (native:7:39)
+    }
+[04:15:43.660] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-A-01a12e52-d80a-717f-b80c-cc0031c29ef2"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "148",
+        "etag": "W/\"94-60lyr6wL3ZHlWwnmUuafOqCmPTs\""
+      }
+    }
+    [35mresponseTime[39m: 32
+[04:15:43.686] [32mINFO[39m (12045): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-B-01a12e52-d82d-707d-8088-6b0f230111ca"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 409,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "157",
+        "etag": "W/\"9d-Y0xZ5GIGEsJ00b2S/RqZgzv7OSw\""
+      }
+    }
+    [35mresponseTime[39m: 24
+[04:15:43.713] [32mINFO[39m (12045): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/wagering/transactions",
+      "headers": {
+        "idempotency-key": "key-503-01a12e52-d85e-73e4-9b50-3128bda3381a"
+      }
+    }
+    [35mres[39m: {
+      "statusCode": 503,
+      "headers": {
+        "x-powered-by": "Express",
+        "retry-after": "1",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "80",
+        "etag": "W/\"50-ktWnsrv4K8dvvKQ2VSVczucyyHM\""
+      }
+    }
+    [35mresponseTime[39m: 2
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (./node_modules/pino-http/logger.js:115:43)
+              at emit (node:events:118:23)
+              at <anonymous> (node:_http_server:1686:16)
+              at processTicksAndRejections (native:7:39)
+    }
+
+src/test/integration/invariants-resilience.spec.ts:
+[90m[migrator] [39mProcessing 'Migration20260101000001_initial_schema'
+[90m[migrator] [39mApplied 'Migration20260101000001_initial_schema'
+[90m[migrator] [39mProcessing 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mApplied 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mProcessing 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mApplied 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mProcessing 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mApplied 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mProcessing 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mApplied 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mProcessing 'Migration20261012000001_outbox_message_group'
+[90m[migrator] [39mApplied 'Migration20261012000001_outbox_message_group'
+[90m[migrator] [39mProcessing 'Migration20261012000002_retention_indexes'
+[90m[migrator] [39mApplied 'Migration20261012000002_retention_indexes'
+[90m[migrator] [39mProcessing 'Migration20261012000002_retention_indexes'
+[90m[migrator] [39mReverted 'Migration20261012000002_retention_indexes'
+[90m[migrator] [39mProcessing 'Migration20261012000001_outbox_message_group'
+[90m[migrator] [39mReverted 'Migration20261012000001_outbox_message_group'
+[90m[migrator] [39mProcessing 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mReverted 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mProcessing 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mReverted 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mProcessing 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mReverted 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mProcessing 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mReverted 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mProcessing 'Migration20260101000001_initial_schema'
+[90m[migrator] [39mReverted 'Migration20260101000001_initial_schema'
+[90m[migrator] [39mProcessing 'Migration20260101000001_initial_schema'
+[90m[migrator] [39mApplied 'Migration20260101000001_initial_schema'
+[90m[migrator] [39mProcessing 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mApplied 'Migration20261011000001_ledger_immutability'
+[90m[migrator] [39mProcessing 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mApplied 'Migration20261011000002_reversal_unique_index'
+[90m[migrator] [39mProcessing 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mApplied 'Migration20261011000003_wager_balance_after'
+[90m[migrator] [39mProcessing 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mApplied 'Migration20261011000004_strict_single_reversal_index'
+[90m[migrator] [39mProcessing 'Migration20261012000001_outbox_message_group'
+[90m[migrator] [39mApplied 'Migration20261012000001_outbox_message_group'
+[90m[migrator] [39mProcessing 'Migration20261012000002_retention_indexes'
+[90m[migrator] [39mApplied 'Migration20261012000002_retention_indexes'
+
+ 71 pass
+ 0 fail
+ 357 expect() calls
+Ran 71 tests across 17 files. [12.59s]

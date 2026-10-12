@@ -1,0 +1,199 @@
+# HELP wagering_process_cpu_user_seconds_total Total user CPU time spent in seconds.
+# TYPE wagering_process_cpu_user_seconds_total counter
+wagering_process_cpu_user_seconds_total 0.743921
+
+# HELP wagering_process_cpu_system_seconds_total Total system CPU time spent in seconds.
+# TYPE wagering_process_cpu_system_seconds_total counter
+wagering_process_cpu_system_seconds_total 0.094045
+
+# HELP wagering_process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE wagering_process_cpu_seconds_total counter
+wagering_process_cpu_seconds_total 0.837966
+
+# HELP wagering_process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE wagering_process_start_time_seconds gauge
+wagering_process_start_time_seconds 1791750622
+
+# HELP wagering_process_resident_memory_bytes Resident memory size in bytes.
+# TYPE wagering_process_resident_memory_bytes gauge
+wagering_process_resident_memory_bytes 161710080
+
+# HELP wagering_nodejs_eventloop_lag_seconds Lag of event loop in seconds.
+# TYPE wagering_nodejs_eventloop_lag_seconds gauge
+wagering_nodejs_eventloop_lag_seconds 0
+
+# HELP wagering_nodejs_eventloop_lag_min_seconds The minimum recorded event loop delay.
+# TYPE wagering_nodejs_eventloop_lag_min_seconds gauge
+wagering_nodejs_eventloop_lag_min_seconds 0.000009
+
+# HELP wagering_nodejs_eventloop_lag_max_seconds The maximum recorded event loop delay.
+# TYPE wagering_nodejs_eventloop_lag_max_seconds gauge
+wagering_nodejs_eventloop_lag_max_seconds 0.008309
+
+# HELP wagering_nodejs_eventloop_lag_mean_seconds The mean of the recorded event loop delays.
+# TYPE wagering_nodejs_eventloop_lag_mean_seconds gauge
+wagering_nodejs_eventloop_lag_mean_seconds 0.000906833676923077
+
+# HELP wagering_nodejs_eventloop_lag_stddev_seconds The standard deviation of the recorded event loop delays.
+# TYPE wagering_nodejs_eventloop_lag_stddev_seconds gauge
+wagering_nodejs_eventloop_lag_stddev_seconds 0.000611297177820276
+
+# HELP wagering_nodejs_eventloop_lag_p50_seconds The 50th percentile of the recorded event loop delays.
+# TYPE wagering_nodejs_eventloop_lag_p50_seconds gauge
+wagering_nodejs_eventloop_lag_p50_seconds 0.001025023
+
+# HELP wagering_nodejs_eventloop_lag_p90_seconds The 90th percentile of the recorded event loop delays.
+# TYPE wagering_nodejs_eventloop_lag_p90_seconds gauge
+wagering_nodejs_eventloop_lag_p90_seconds 0.001043455
+
+# HELP wagering_nodejs_eventloop_lag_p99_seconds The 99th percentile of the recorded event loop delays.
+# TYPE wagering_nodejs_eventloop_lag_p99_seconds gauge
+wagering_nodejs_eventloop_lag_p99_seconds 0.002633727
+
+# HELP wagering_nodejs_active_resources Number of active resources that are currently keeping the event loop alive, grouped by async resource type.
+# TYPE wagering_nodejs_active_resources gauge
+
+# HELP wagering_nodejs_active_resources_total Total number of active resources.
+# TYPE wagering_nodejs_active_resources_total gauge
+wagering_nodejs_active_resources_total 0
+
+# HELP wagering_nodejs_active_handles Number of active libuv handles grouped by handle type. Every handle type is C++ class name.
+# TYPE wagering_nodejs_active_handles gauge
+
+# HELP wagering_nodejs_active_handles_total Total number of active handles.
+# TYPE wagering_nodejs_active_handles_total gauge
+wagering_nodejs_active_handles_total 0
+
+# HELP wagering_nodejs_active_requests Number of active libuv requests grouped by request type. Every request type is C++ class name.
+# TYPE wagering_nodejs_active_requests gauge
+
+# HELP wagering_nodejs_active_requests_total Total number of active requests.
+# TYPE wagering_nodejs_active_requests_total gauge
+wagering_nodejs_active_requests_total 0
+
+# HELP wagering_nodejs_heap_size_total_bytes Process heap size from Node.js in bytes.
+# TYPE wagering_nodejs_heap_size_total_bytes gauge
+wagering_nodejs_heap_size_total_bytes 22967296
+
+# HELP wagering_nodejs_heap_size_used_bytes Process heap size used from Node.js in bytes.
+# TYPE wagering_nodejs_heap_size_used_bytes gauge
+wagering_nodejs_heap_size_used_bytes 44021615
+
+# HELP wagering_nodejs_external_memory_bytes Node.js external memory size in bytes.
+# TYPE wagering_nodejs_external_memory_bytes gauge
+wagering_nodejs_external_memory_bytes 26346248
+
+# HELP wagering_nodejs_heap_space_size_total_bytes Process heap space size total from Node.js in bytes.
+# TYPE wagering_nodejs_heap_space_size_total_bytes gauge
+wagering_nodejs_heap_space_size_total_bytes{space="read_only"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="new"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="old"} 49091464
+wagering_nodejs_heap_space_size_total_bytes{space="code"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="shared"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="trusted"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="new_large_object"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="large_object"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="code_large_object"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="shared_large_object"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="shared_trusted"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="shared_trusted_large_object"} 0
+wagering_nodejs_heap_space_size_total_bytes{space="trusted_large_object"} 0
+
+# HELP wagering_nodejs_heap_space_size_used_bytes Process heap space size used from Node.js in bytes.
+# TYPE wagering_nodejs_heap_space_size_used_bytes gauge
+wagering_nodejs_heap_space_size_used_bytes{space="read_only"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="new"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="old"} 44027560
+wagering_nodejs_heap_space_size_used_bytes{space="code"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="shared"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="trusted"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="new_large_object"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="large_object"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="code_large_object"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="shared_large_object"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="shared_trusted"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="shared_trusted_large_object"} 0
+wagering_nodejs_heap_space_size_used_bytes{space="trusted_large_object"} 0
+
+# HELP wagering_nodejs_heap_space_size_available_bytes Process heap space size available from Node.js in bytes.
+# TYPE wagering_nodejs_heap_space_size_available_bytes gauge
+wagering_nodejs_heap_space_size_available_bytes{space="read_only"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="new"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="old"} 5063904
+wagering_nodejs_heap_space_size_available_bytes{space="code"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="shared"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="trusted"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="new_large_object"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="large_object"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="code_large_object"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="shared_large_object"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="shared_trusted"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="shared_trusted_large_object"} 0
+wagering_nodejs_heap_space_size_available_bytes{space="trusted_large_object"} 0
+
+# HELP wagering_nodejs_version_info Node.js version info.
+# TYPE wagering_nodejs_version_info gauge
+wagering_nodejs_version_info{version="v26.3.0",major="26",minor="3",patch="0"} 1
+
+# HELP wagering_nodejs_gc_duration_seconds Garbage collection duration by kind, one of major, minor, incremental or weakcb.
+# TYPE wagering_nodejs_gc_duration_seconds histogram
+
+# HELP wagering_transactions_processed_total Total wager transactions successfully processed
+# TYPE wagering_transactions_processed_total counter
+wagering_transactions_processed_total{kind="BET"} 1
+
+# HELP wagering_transactions_rejected_total Total wager transactions rejected
+# TYPE wagering_transactions_rejected_total counter
+
+# HELP wagering_transactions_failed_total Total wager transactions that reached FAILED (permanent error)
+# TYPE wagering_transactions_failed_total counter
+
+# HELP wagering_idempotent_replays_total Total idempotent replay responses returned
+# TYPE wagering_idempotent_replays_total counter
+
+# HELP wagering_pending_references_resolved_total Total PENDING_REFERENCE transactions successfully resolved by the retry worker
+# TYPE wagering_pending_references_resolved_total counter
+wagering_pending_references_resolved_total 0
+
+# HELP wagering_reconciliation_discrepancies_total Total wallet reconciliation discrepancies detected
+# TYPE wagering_reconciliation_discrepancies_total counter
+wagering_reconciliation_discrepancies_total 0
+
+# HELP wagering_optimistic_lock_conflicts_total Total optimistic lock conflicts encountered on wallet modification
+# TYPE wagering_optimistic_lock_conflicts_total counter
+wagering_optimistic_lock_conflicts_total 0
+
+# HELP wagering_retry_attempts_total Total retry attempts performed (optimistic lock or SQS consumers)
+# TYPE wagering_retry_attempts_total counter
+
+# HELP wagering_dlq_messages_total Total poisoned or unprocessable messages forwarded to Dead Letter Queue
+# TYPE wagering_dlq_messages_total counter
+wagering_dlq_messages_total 0
+
+# HELP wagering_transaction_processing_duration_ms End-to-end latency of wager transaction processing in milliseconds
+# TYPE wagering_transaction_processing_duration_ms histogram
+wagering_transaction_processing_duration_ms_bucket{le="5",kind="BET",outcome="processed"} 0
+wagering_transaction_processing_duration_ms_bucket{le="10",kind="BET",outcome="processed"} 0
+wagering_transaction_processing_duration_ms_bucket{le="25",kind="BET",outcome="processed"} 0
+wagering_transaction_processing_duration_ms_bucket{le="50",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_bucket{le="100",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_bucket{le="250",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_bucket{le="500",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_bucket{le="1000",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_bucket{le="2500",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_bucket{le="5000",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_bucket{le="+Inf",kind="BET",outcome="processed"} 1
+wagering_transaction_processing_duration_ms_sum{kind="BET",outcome="processed"} 34
+wagering_transaction_processing_duration_ms_count{kind="BET",outcome="processed"} 1
+
+# HELP wagering_pending_references_current Current number of PENDING_REFERENCE transactions in the system
+# TYPE wagering_pending_references_current gauge
+wagering_pending_references_current 0
+
+# HELP wagering_outbox_pending_messages Current number of unpublished outbox messages
+# TYPE wagering_outbox_pending_messages gauge
+wagering_outbox_pending_messages 0
+
+# HELP wagering_outbox_lag_seconds Age in seconds of the oldest unpublished message in outbox table
+# TYPE wagering_outbox_lag_seconds gauge
+wagering_outbox_lag_seconds 0

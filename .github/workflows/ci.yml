@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck + tests (real PostgreSQL and LocalStack SQS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ENABLE_BACKGROUND_POLL: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Documentation integrity (links, line references, test counts source)
+        run: bun run scripts/check-docs.ts
+
+      - name: Prometheus alert rules (syntax + unit tests)
+        run: |
+          docker run --rm -v "$PWD/infra/prometheus:/rules" -w /rules --entrypoint promtool \
+            prom/prometheus:v2.53.2 check rules alerts.yml
+          docker run --rm -v "$PWD/infra/prometheus:/rules" -w /rules --entrypoint promtool \
+            prom/prometheus:v2.53.2 test rules alerts.test.yml
+
+      - name: Start PostgreSQL and LocalStack
+        run: docker compose up -d --wait postgres localstack
+
+      - name: Run migrations
+        run: bun run migration:up
+
+      - name: Unit tests
+        run: bun run test:unit
+
+      - name: Integration tests
+        run: bun run test:int
+
+      - name: Concurrency tests (multi-process)
+        run: bun run test:e2e
+
+      - name: Load test
+        run: bun run test:load
+
+      - name: Migrations are reversible
+        run: bun run migration:down && bun run migration:up
+
+      - name: Service logs on failure
+        if: failure()
+        run: docker compose logs --no-color postgres localstack
+
+  image:
+    name: Docker image + 3-replica smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start the full stack
+        run: docker compose up -d --build --wait
+
+      - name: Smoke test across replicas
+        run: |
+          set -euo pipefail
+          PLAYER=$(cat /proc/sys/kernel/random/uuid)
+          WALLET=$(curl -fsS -X POST localhost:3011/wallets -H 'Content-Type: application/json' \
+            -d "{\"playerId\":\"$PLAYER\",\"initialBalance\":{\"amount\":\"100.00\",\"currency\":\"BRL\"}}" | jq -r .id)
+          BODY="{\"providerId\":\"ci\",\"externalTransactionId\":\"bet-$PLAYER\",\"playerId\":\"$PLAYER\",\"walletId\":\"$WALLET\",\"roundId\":\"r1\",\"gameId\":\"g1\",\"kind\":\"BET\",\"money\":{\"amount\":\"25.00\",\"currency\":\"BRL\"}}"
+          curl -fsS -X POST localhost:3012/wagering/transactions -H 'Content-Type: application/json' -H "Idempotency-Key: ci:$PLAYER" -d "$BODY" | jq -e '.status == "PROCESSED" and .balance.amount == "75.00"'
+          curl -fsS -X POST localhost:3013/wagering/transactions -H 'Content-Type: application/json' -H "Idempotency-Key: ci:$PLAYER" -d "$BODY" | jq -e '.idempotentReplay == true'
+          curl -fsS -X POST "localhost:3011/wallets/$WALLET/reconciliation" | jq -e '.consistent == true'
+
+      - name: Graceful shutdown (SIGTERM as PID 1 must exit 0, not be SIGKILLed)
+        run: |
+          set -euo pipefail
+          docker compose stop -t 15 app-1 app-2 app-3
+          for c in jungle-app-1 jungle-app-2 jungle-app-3; do
+            code=$(docker inspect -f '{{.State.ExitCode}}' "$c")
+            echo "$c exit code: $code"
+            test "$code" = "0"
+          done
+
+      - name: Service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
