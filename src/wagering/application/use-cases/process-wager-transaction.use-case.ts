@@ -63,6 +63,15 @@ export interface ProcessWagerResult {
   failureCode?: FailureCode;
 }
 
+/**
+ * PostgreSQL returns UUIDs lowercase; providers may send any case. Normalizing at the single
+ * entry point keeps reference checks (string comparison with persisted ids) and the payload
+ * hash independent of the case the provider used.
+ */
+function normalizeIds(cmd: ProcessWagerCommand): ProcessWagerCommand {
+  return { ...cmd, playerId: cmd.playerId.toLowerCase(), walletId: cmd.walletId.toLowerCase() };
+}
+
 /** Unique constraints whose violation has a defined business meaning. */
 const UQ_REFERENCE_REVERSAL = 'uq_wager_reference_reversal';
 const UQ_PROVIDER_EXTERNAL = 'uq_wager_provider_external';
@@ -78,7 +87,8 @@ export class ProcessWagerTransactionUseCase {
     @Optional() private readonly metrics: WageringMetrics = new NoopWageringMetrics(),
   ) {}
 
-  async execute(cmd: ProcessWagerCommand): Promise<ProcessWagerResult> {
+  async execute(input: ProcessWagerCommand): Promise<ProcessWagerResult> {
+    const cmd = normalizeIds(input);
     this.assertExternalKind(cmd);
     const payloadHash = this.payloadHashOf(cmd);
     const t0 = Date.now();
@@ -129,15 +139,17 @@ export class ProcessWagerTransactionUseCase {
    * Processes the command inside a transaction owned by the caller
    * (used by the pending-reference worker to resolve within its own unit of work).
    */
-  async executeInScope(scope: TransactionScope, cmd: ProcessWagerCommand): Promise<ProcessWagerResult> {
+  async executeInScope(scope: TransactionScope, input: ProcessWagerCommand): Promise<ProcessWagerResult> {
+    const cmd = normalizeIds(input);
     this.assertExternalKind(cmd);
     return this.process(scope, cmd, this.payloadHashOf(cmd));
   }
 
   async recordFailure(
-    cmd: ProcessWagerCommand,
+    input: ProcessWagerCommand,
     failureCode: FailureCode = FailureCode.PERMANENT_PROCESSING_ERROR,
   ): Promise<ProcessWagerResult> {
+    const cmd = normalizeIds(input);
     const payloadHash = this.payloadHashOf(cmd);
 
     return this.uow.transactional(async ({ wallets, wagers }) => {
