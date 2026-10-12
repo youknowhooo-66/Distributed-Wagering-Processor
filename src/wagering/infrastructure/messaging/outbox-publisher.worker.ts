@@ -7,6 +7,9 @@ import { outboxLagSecondsGauge, outboxPendingGauge } from '../../../shared/infra
 
 const MAX_GROUPS_PER_POLL = 50;
 const MAX_MESSAGES_PER_GROUP = 50;
+/** Groups published concurrently; order only matters within a group. */
+const GROUP_CONCURRENCY = 8;
+const IDLE_POLL_MS = 1000;
 
 @Injectable()
 export class OutboxPublisherWorker implements OnModuleInit, OnModuleDestroy {
@@ -38,12 +41,14 @@ export class OutboxPublisherWorker implements OnModuleInit, OnModuleDestroy {
   private scheduleNextPoll(delayMs: number) {
     if (!this.isRunning) return;
     this.timer = setTimeout(async () => {
+      let published = 0;
       try {
-        await this.pollAndPublish();
+        published = await this.pollAndPublish();
       } catch (err) {
         this.logger.error(`Outbox publisher loop error: ${err}`);
       } finally {
-        this.scheduleNextPoll(1000); // Poll every 1s
+        // Keep draining while there is work; wait only when the outbox is idle
+        this.scheduleNextPoll(published > 0 ? 0 : IDLE_POLL_MS);
       }
     }, delayMs);
   }
@@ -87,35 +92,44 @@ export class OutboxPublisherWorker implements OnModuleInit, OnModuleDestroy {
         [now, MAX_GROUPS_PER_POLL],
       );
 
+      const groups = (dueGroups.rows as { message_group_id: string }[]).map((r) => r.message_group_id);
       let publishedCount = 0;
-
-      for (const { message_group_id: groupId } of dueGroups.rows as { message_group_id: string }[]) {
-        const lock = await knexTx.raw(
-          'SELECT pg_try_advisory_xact_lock(hashtextextended(?, 0)) AS locked',
-          [`outbox:${groupId}`],
+      for (let i = 0; i < groups.length; i += GROUP_CONCURRENCY) {
+        const counts = await Promise.all(
+          groups.slice(i, i + GROUP_CONCURRENCY).map((groupId) => this.publishGroup(knex, knexTx, groupId, now)),
         );
-        if (!lock.rows[0]?.locked) continue; // another publisher owns this group right now
-
-        const rows = await knex('outbox_messages')
-          .transacting(knexTx)
-          .whereNull('published_at')
-          .andWhere({ message_group_id: groupId })
-          .orderBy([{ column: 'occurred_at' }, { column: 'id' }])
-          .limit(MAX_MESSAGES_PER_GROUP)
-          .forUpdate();
-
-        for (const row of rows) {
-          if (row.next_attempt_at && new Date(row.next_attempt_at) > now) break;
-          if (await this.publishRow(knex, knexTx, row)) {
-            publishedCount++;
-          } else {
-            break;
-          }
-        }
+        publishedCount += counts.reduce((sum, n) => sum + n, 0);
       }
 
       return publishedCount;
     });
+  }
+
+  /**
+   * Publishes one group strictly in order, stopping at the first message in backoff or failing.
+   * Returns how many were published (0 when another publisher holds the group).
+   */
+  private async publishGroup(knex: any, knexTx: any, groupId: string, now: Date): Promise<number> {
+    const lock = await knexTx.raw('SELECT pg_try_advisory_xact_lock(hashtextextended(?, 0)) AS locked', [
+      `outbox:${groupId}`,
+    ]);
+    if (!lock.rows[0]?.locked) return 0; // another publisher owns this group right now
+
+    const rows = await knex('outbox_messages')
+      .transacting(knexTx)
+      .whereNull('published_at')
+      .andWhere({ message_group_id: groupId })
+      .orderBy([{ column: 'occurred_at' }, { column: 'id' }])
+      .limit(MAX_MESSAGES_PER_GROUP)
+      .forUpdate();
+
+    let published = 0;
+    for (const row of rows) {
+      if (row.next_attempt_at && new Date(row.next_attempt_at) > now) break;
+      if (!(await this.publishRow(knex, knexTx, row))) break;
+      published++;
+    }
+    return published;
   }
 
   /** Publishes one outbox row; on failure schedules a backoff retry. Returns success. */
