@@ -32,7 +32,7 @@ Escopo: Distributed Wagering Processor (Jungle Gaming)
 | **5. Mensageria Distribuída** | 10% | Consumo e publicação ordenados via SQS FIFO, Transactional Outbox Pattern e Inbox Pattern. | Fila `wagering-events.fifo` com `MessageGroupId: walletId` e desduplicação via `inbox_messages`. | ✅ VERIFICADO |
 | **6. Observabilidade** | 10% | Métricas Prometheus expostas via `/metrics` (contadores, latência, gauges de outbox e fila). | Endpoint `/metrics` via `prom-client`, alimentado pela porta `WageringMetrics`; todas as métricas documentadas são atualizadas (teste `../src/test/integration/metrics-wiring.spec.ts`); 8 regras de alerta em `../infra/prometheus/alerts.yml` testadas com `promtool`. | ✅ VERIFICADO |
 | **7. Resiliência e Falhas** | 5% | Dead Letter Queue para mensagens venenosas, tratamento de erros temporários vs definitivos. | Fila `wager-transactions-dlq.fifo` com `FailureReason`; erros permanentes direto para a DLQ; mensagem só sai da fila principal após a DLQ confirmar; redrive seletivo (`bun run dlq:redrive`) e retenção de outbox/inbox testados. | ✅ VERIFICADO |
-| **8. Testabilidade** | 5% | Testes unitários, integração, concorrência multi-processo e testes de carga. | 75 unitários, 71 integração, 6 concorrência, 4 carga (total: 156 testes em 27 arquivos); typecheck cobre produção, testes e scripts; workflow de CI em `.github/workflows/ci.yml`. | ✅ VERIFICADO |
+| **8. Testabilidade** | 5% | Testes unitários, integração, concorrência multi-processo e testes de carga. | 75 unitários, 73 integração, 6 concorrência, 4 carga (total: 158 testes em 28 arquivos); carga HTTP com p50/p95/p99 em `bun run load:http`; typecheck cobre produção, testes e scripts; workflow de CI em `.github/workflows/ci.yml`. | ✅ VERIFICADO |
 
 ---
 

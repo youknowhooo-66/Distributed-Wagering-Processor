@@ -76,13 +76,13 @@ Os testes rodam contra PostgreSQL e LocalStack reais (pré-requisito: passos 2 e
 # Checagem de tipos (código de produção, testes e scripts)
 bun run typecheck
 
-# Todos os testes (156)
+# Todos os testes (158)
 bun run test
 
 # Unitários (75): Money, Wallet, WagerTransaction, hash canônico, validação de contrato
 bun run test:unit
 
-# Integração (71): atomicidade, idempotência, reversões, reconciliação, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP
+# Integração (73): atomicidade, idempotência, reversões, reconciliação, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP
 bun run test:int
 
 # Concorrência (6): 3 processos disputando a mesma wallet, 50 requisições paralelas
@@ -93,6 +93,8 @@ bun run test:load
 ```
 
 Operação: `bun run dlq:redrive --reason <FailureReason> [--execute]` reenvia mensagens selecionadas da DLQ (ver `docs/OPERATIONS_RUNBOOK.md`); o expurgo de outbox/inbox é automático (`OUTBOX_RETENTION_DAYS`, `INBOX_RETENTION_DAYS`); as regras de alerta estão em `infra/prometheus/alerts.yml`.
+
+Carga HTTP contra as 3 réplicas: `bun run load:http` (resultados e leitura do p99 em `docs/TEST_REPORT.md`).
 
 O workflow `.github/workflows/ci.yml` executa o typecheck, a verificação da documentação, os testes das regras de alerta (`promtool`), as suítes acima, o ciclo `migration:down`/`migration:up` e, num segundo job, a imagem Docker com 3 réplicas: smoke test entre réplicas e verificação de encerramento gracioso.
 

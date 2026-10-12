@@ -101,3 +101,8 @@ Escopo: Construção incremental e correções P0/P1/P2
 - **Alertas**: `infra/prometheus/alerts.yml` (8 regras) e `alerts.test.yml`, executados com `promtool` no CI.
 - **Workers**: `PendingReferenceWorker` passa a respeitar `ENABLE_BACKGROUND_POLL`, como os demais (antes rodava durante os testes).
 - **Tipagem**: 35 erros de tipagem estrita nos testes e 15 nos scripts corrigidos; `bun run typecheck` cobre produção, testes e scripts.
+
+### UUID e desempenho (12/10/2026)
+- **UUID em maiúsculas**: o PostgreSQL devolve UUIDs em minúsculas e as checagens de referência comparam texto. Um REFUND com `playerId` em maiúsculas era rejeitado como `CROSS_PLAYER_REFERENCE`, e a mesma requisição em caixa diferente virava 409 em vez de replay. Correção: normalização na entrada do caso de uso (HTTP, SQS e worker). **Evidência**: `../src/test/integration/uuid-case.spec.ts` (falhava antes da correção).
+- **Idas ao banco com o lock da wallet**: de 10 para 6 por aposta — sem `SELECT` antes de inserir transação e eventos do outbox (identity map), eventos inseridos num único `INSERT`. Carga HTTP com 3 réplicas: p99 de 183 → ~124 ms (distribuído) e 419 → ~343 ms (hot wallet); vazão +43% e +27%. Detalhes em [TEST_REPORT.md](./TEST_REPORT.md), seção 2.
+- **Evidência de carga**: a tabela de `load-summary.md` estava vazia (o teste deixara de imprimir conflitos e retentativas); o teste volta a medi-los pelos contadores Prometheus.

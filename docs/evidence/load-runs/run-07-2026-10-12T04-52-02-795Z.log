@@ -1,0 +1,15 @@
+bun test v1.4.2 (744846f84)
+[32m[Nest] 15349  - [39m10/12/2026, 4:52:03 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e74-1927-715b-9412-1e1a93b3a0c7 verified against 51 ledger entries.[39m
+
+src/test/load/load-50-bets.spec.ts:
+[LOAD TEST METRICS] Total: 50 | PROCESSED: 50 | 503 Concurrency Exceeded: 0 | p50: 87.51ms | p95: 134.57ms | p99: 138.48ms | Lock Conflicts: 0 | Retry Attempts: 0
+[32m[Nest] 15349  - [39m10/12/2026, 4:52:05 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e74-19e2-772d-87fe-5eefae403a04 verified against 1501 ledger entries.[39m
+[32m[Nest] 15349  - [39m10/12/2026, 4:52:05 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e74-229c-774c-a662-fb2dc4e8411b verified against 101 ledger entries.[39m
+[LOAD TEST 100 BETS] Total: 100 | PROCESSED: 100 | 503: 0 | p50: 67.35ms | p95: 126.40ms
+[32m[Nest] 15349  - [39m10/12/2026, 4:52:05 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e74-2339-7778-a0fe-dc74416a5c91 verified against 201 ledger entries.[39m
+[LOAD TEST 200 BETS] Total: 200 | PROCESSED: 200 | 503: 0 | p50: 137.18ms | p95: 261.34ms
+
+ 4 pass
+ 0 fail
+ 46 expect() calls
+Ran 4 tests across 1 file. [3.06s]

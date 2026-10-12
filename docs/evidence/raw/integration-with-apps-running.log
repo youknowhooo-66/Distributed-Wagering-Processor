@@ -1,12 +1,12 @@
 bun test v1.4.2 (744846f84)
-[32m[Nest] 12027  - [39m10/12/2026, 4:15:19 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-7aee-74af-913a-92b2501e9e6d verified against 1 ledger entries.[39m
-[32m[Nest] 12027  - [39m10/12/2026, 4:15:19 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-7b35-77ff-abca-547af0883247 verified against 3 ledger entries.[39m
-[32m[Nest] 12027  - [39m10/12/2026, 4:15:19 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-7b5f-755d-afec-0a2ce8015bec verified against 3 ledger entries.[39m
-[32m[Nest] 12027  - [39m10/12/2026, 4:15:20 AM [32m    LOG[39m [38;5;3m[RetryPendingReferencesUseCase] [39m[32mSuccessfully resolved pending reference for tx 01a12e52-7bbc-70e6-8754-85c6726da67a[39m
-[32m[Nest] 12027  - [39m10/12/2026, 4:15:20 AM [32m    LOG[39m [38;5;3m[RetryPendingReferencesUseCase] [39m[32mSuccessfully resolved pending reference for tx 01a12e52-7bbe-74a4-986a-27066285abc3[39m
-[32m[Nest] 12027  - [39m10/12/2026, 4:15:20 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e52-7bb8-778e-bc71-0f376ab906e2 verified against 5 ledger entries.[39m
-[32m[Nest] 12027  - [39m10/12/2026, 4:15:20 AM [32m    LOG[39m [38;5;3m[PurgeProcessedMessagesUseCase] [39m[32mRetention purge: 1 outbox, 1 inbox records removed[39m
-[04:15:24.383] [32mINFO[39m (12027): [36mrequest completed[39m
+[32m[Nest] 15291  - [39m10/12/2026, 4:51:14 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e73-5a87-7798-9186-7e2dd9b28c7d verified against 1 ledger entries.[39m
+[32m[Nest] 15291  - [39m10/12/2026, 4:51:14 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e73-5acd-75ca-9b88-46784ff0b437 verified against 3 ledger entries.[39m
+[32m[Nest] 15291  - [39m10/12/2026, 4:51:14 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e73-5af7-7511-be35-48ed0310a053 verified against 3 ledger entries.[39m
+[32m[Nest] 15291  - [39m10/12/2026, 4:51:14 AM [32m    LOG[39m [38;5;3m[RetryPendingReferencesUseCase] [39m[32mSuccessfully resolved pending reference for tx 01a12e73-5b48-75eb-88d1-ea8f1e7bd6ff[39m
+[32m[Nest] 15291  - [39m10/12/2026, 4:51:14 AM [32m    LOG[39m [38;5;3m[RetryPendingReferencesUseCase] [39m[32mSuccessfully resolved pending reference for tx 01a12e73-5b4b-76eb-80f5-e8c5274d1326[39m
+[32m[Nest] 15291  - [39m10/12/2026, 4:51:14 AM [32m    LOG[39m [38;5;3m[ReconcileWalletUseCase] [39m[32m[RECONCILIATION_OK] Wallet 01a12e73-5b46-74f0-becd-f13c0784c27b verified against 5 ledger entries.[39m
+[32m[Nest] 15291  - [39m10/12/2026, 4:51:14 AM [32m    LOG[39m [38;5;3m[PurgeProcessedMessagesUseCase] [39m[32mRetention purge: 1 outbox, 1 inbox records removed[39m
+[04:51:19.006] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 1,
       "method": "POST",
@@ -19,11 +19,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-+Omqy45MHb9OQJNKzyzh2CcVnqI\""
+        "etag": "W/\"9a-B5joO19ZNlRhlhCdHCyn/XUZXk4\""
       }
     }
-    [35mresponseTime[39m: 23
-[04:15:24.935] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 19
+[04:51:19.473] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 1,
       "method": "POST",
@@ -36,17 +36,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-5w7ihhrruu6HBkeuaKuUhfEojMM\""
+        "etag": "W/\"9a-1yseARbK6btFXICevO+YpgXC2uE\""
       }
     }
-    [35mresponseTime[39m: 29
-[04:15:24.936] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 15
+[04:51:19.475] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 2,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f07-7630-b04d-464c60cca22a"
+        "idempotency-key": "key-ext-01a12e73-6f32-73ad-acf1-9f3823ccfa2c"
       }
     }
     [35mres[39m: {
@@ -59,13 +59,13 @@ bun test v1.4.2 (744846f84)
       }
     }
     [35mresponseTime[39m: 1
-[04:15:24.937] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:19.475] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 3,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f08-763a-9419-3005c81972d2"
+        "idempotency-key": "key-ext-01a12e73-6f33-77f8-8848-3b644fdbfdb4"
       }
     }
     [35mres[39m: {
@@ -77,14 +77,14 @@ bun test v1.4.2 (744846f84)
         "etag": "W/\"61-dQgl/n7BOuEzuhZHZx4cvT1gTIg\""
       }
     }
-    [35mresponseTime[39m: 1
-[04:15:24.937] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 0
+[04:51:19.475] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 4,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f09-7317-9561-b90d7cef949d"
+        "idempotency-key": "key-ext-01a12e73-6f33-77f8-8848-3f910caf96f5"
       }
     }
     [35mres[39m: {
@@ -97,13 +97,13 @@ bun test v1.4.2 (744846f84)
       }
     }
     [35mresponseTime[39m: 0
-[04:15:24.938] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:19.476] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 5,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f09-7317-9561-bcce1f2c34ce"
+        "idempotency-key": "key-ext-01a12e73-6f34-73ae-b6ab-50a42a61ff5a"
       }
     }
     [35mres[39m: {
@@ -116,13 +116,13 @@ bun test v1.4.2 (744846f84)
       }
     }
     [35mresponseTime[39m: 0
-[04:15:24.938] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:19.476] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 6,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f0a-7727-9f33-4edbde458dad"
+        "idempotency-key": "key-ext-01a12e73-6f34-73ae-b6ab-55750d2694cc"
       }
     }
     [35mres[39m: {
@@ -135,13 +135,13 @@ bun test v1.4.2 (744846f84)
       }
     }
     [35mresponseTime[39m: 0
-[04:15:24.939] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:19.477] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 7,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f0a-7727-9f33-50f3653ce96c"
+        "idempotency-key": "key-ext-01a12e73-6f35-72cf-8b45-917cee1d4c49"
       }
     }
     [35mres[39m: {
@@ -154,7 +154,7 @@ bun test v1.4.2 (744846f84)
       }
     }
     [35mresponseTime[39m: 0
-[04:15:24.939] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:19.477] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 8,
       "method": "POST",
@@ -173,13 +173,13 @@ bun test v1.4.2 (744846f84)
       }
     }
     [35mresponseTime[39m: 0
-[04:15:24.955] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:19.486] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 9,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f0b-70ac-9ac5-060b7820af8a"
+        "idempotency-key": "key-ext-01a12e73-6f35-72cf-8b45-9ac981ed4b9d"
       }
     }
     [35mres[39m: {
@@ -188,17 +188,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "148",
-        "etag": "W/\"94-XMaYWow3ggySEUC3EeLCJ/i+pTg\""
+        "etag": "W/\"94-uePK5LmAav7na6H9K8SpYTCyHmU\""
       }
     }
-    [35mresponseTime[39m: 15
-[04:15:24.965] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 9
+[04:51:19.489] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 10,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-ext-01a12e52-8f1c-7658-bdf0-c5fe1599d607"
+        "idempotency-key": "key-ext-01a12e73-6f3e-732e-be75-5f78ef4b8347"
       }
     }
     [35mres[39m: {
@@ -207,11 +207,28 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "148",
-        "etag": "W/\"94-NEMjwiiqox6wxbzyIXG8WrGMeGw\""
+        "etag": "W/\"94-NkxhQvbkCXUKSBqq/TZOhjSmOk0\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[04:51:19.526] [32mINFO[39m (15291): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/wallets",
+      "headers": {}
+    }
+    [35mres[39m: {
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "154",
+        "etag": "W/\"9a-Jc/CUcd7avfHLR9wWR0tOquIiKE\""
       }
     }
     [35mresponseTime[39m: 9
-[04:15:25.007] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:19.835] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 1,
       "method": "POST",
@@ -224,28 +241,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-ovQBC+1cOLmHAG/utbI+dmoJO20\""
+        "etag": "W/\"9a-oXiQcWmY5r+v1+S9XhkBgKuMkRs\""
       }
     }
-    [35mresponseTime[39m: 11
-[04:15:25.292] [32mINFO[39m (12027): [36mrequest completed[39m
-    [35mreq[39m: {
-      "id": 1,
-      "method": "POST",
-      "url": "/wallets",
-      "headers": {}
-    }
-    [35mres[39m: {
-      "statusCode": 201,
-      "headers": {
-        "x-powered-by": "Express",
-        "content-type": "application/json; charset=utf-8",
-        "content-length": "154",
-        "etag": "W/\"9a-6VglXlk3PaNbZmW02Nl/sgQQbXA\""
-      }
-    }
-    [35mresponseTime[39m: 8
-[04:15:25.421] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 6
+[04:51:20.026] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 1,
       "method": "GET",
@@ -258,11 +258,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "54",
-        "etag": "W/\"36-D55loLlbxTFTSJJn4mXnEaplKbE\""
+        "etag": "W/\"36-71ynAfJUEpQ5CIoN7yk/9fRTYoQ\""
       }
     }
     [35mresponseTime[39m: 0
-[04:15:25.425] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.031] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 2,
       "method": "GET",
@@ -275,11 +275,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "144",
-        "etag": "W/\"90-D7inFZkLGpqlAnTi/QccZowfQCw\""
+        "etag": "W/\"90-mUjPY88L/eJLR1F4qpkBLN43j/c\""
       }
     }
-    [35mresponseTime[39m: 4
-[04:15:25.438] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 5
+[04:51:20.044] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 3,
       "method": "GET",
@@ -291,12 +291,12 @@ bun test v1.4.2 (744846f84)
       "headers": {
         "x-powered-by": "Express",
         "content-type": "text/plain; charset=utf-8; version=0.0.4",
-        "content-length": "16737",
-        "etag": "W/\"4161-oPXo3dUVdUYAzWlKYwQ6Vn4oF2Y\""
+        "content-length": "16740",
+        "etag": "W/\"4164-qxQwzOItB1i6XGVJWiKqjQ5UY7c\""
       }
     }
-    [35mresponseTime[39m: 13
-[04:15:25.445] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 12
+[04:51:20.050] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 4,
       "method": "POST",
@@ -309,11 +309,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-iERPo4we9oJmMJEN/FKcxLG8Wvk\""
+        "etag": "W/\"9a-xFkOhvM19PNmYNXRFeeiXBjVjig\""
       }
     }
     [35mresponseTime[39m: 6
-[04:15:25.449] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.053] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 5,
       "method": "POST",
@@ -326,15 +326,15 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-th7d9UHM8A0KnIxyMB+DeW00O4U\""
+        "etag": "W/\"9a-aoHOVvv0iclJn9vPlxngygxg4y8\""
       }
     }
-    [35mresponseTime[39m: 4
-[04:15:25.450] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 3
+[04:51:20.054] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 6,
       "method": "GET",
-      "url": "/wallets/01a12e52-9106-76e5-bf3e-6a2f15436904",
+      "url": "/wallets/01a12e73-7173-7788-ab91-9110a20b3c22",
       "headers": {}
     }
     [35mres[39m: {
@@ -343,11 +343,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-th7d9UHM8A0KnIxyMB+DeW00O4U\""
+        "etag": "W/\"9a-aoHOVvv0iclJn9vPlxngygxg4y8\""
       }
     }
     [35mresponseTime[39m: 1
-[04:15:25.453] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.057] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 7,
       "method": "POST",
@@ -360,15 +360,15 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-6+ttH/dPhuHZGGwNK3xaS/93Vhc\""
+        "etag": "W/\"9a-bJAekdUSgCQ6tZAxs9yDHo9DDQM\""
       }
     }
     [35mresponseTime[39m: 3
-[04:15:25.455] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.059] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 8,
       "method": "GET",
-      "url": "/wallets/01a12e52-910b-74fe-8ecb-cca79714f997/ledger?limit=10",
+      "url": "/wallets/01a12e73-7177-7340-934e-7f12a52bf54e/ledger?limit=10",
       "headers": {}
     }
     [35mres[39m: {
@@ -377,11 +377,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "390",
-        "etag": "W/\"186-X6m/XUSdA7J/UiwxqzmLiBSP0pc\""
+        "etag": "W/\"186-DjNEVSz9mk2ykmgNmibIeUBnIb0\""
       }
     }
     [35mresponseTime[39m: 2
-[04:15:25.458] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.066] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 9,
       "method": "POST",
@@ -394,15 +394,15 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-jm4pJg+nWbSBo2GsMVBgVApehuA\""
+        "etag": "W/\"9a-zSW/ub/kZFi3ceD1XNM/QiHN6oU\""
       }
     }
-    [35mresponseTime[39m: 3
-[04:15:25.473] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 7
+[04:51:20.089] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 10,
       "method": "POST",
-      "url": "/wallets/01a12e52-9110-72b9-8bdf-d35d22d2c255/reconciliation",
+      "url": "/wallets/01a12e73-717c-73c4-b7c4-fc1fd8150d24/reconciliation",
       "headers": {}
     }
     [35mres[39m: {
@@ -411,11 +411,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "272",
-        "etag": "W/\"110-Jaymfso1QDXyXUt8TuXR67xQnNY\""
+        "etag": "W/\"110-WaNPYTH0hOgs/3Gp6nQc4D6vtww\""
       }
     }
-    [35mresponseTime[39m: 14
-[04:15:25.477] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 23
+[04:51:20.093] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 11,
       "method": "POST",
@@ -428,17 +428,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-k9FO+UU0Gw/3L8oOALDsZZzOmIU\""
+        "etag": "W/\"9a-LdbYdEUtW4uKW3+Ib/jamfVuZsM\""
       }
     }
     [35mresponseTime[39m: 3
-[04:15:25.482] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.097] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 12,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-bet-http-01a12e52-9125-735d-b17b-8683a4523b6e"
+        "idempotency-key": "key-bet-http-01a12e73-719d-725e-a416-bef80fdcbeb4"
       }
     }
     [35mres[39m: {
@@ -447,15 +447,15 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "148",
-        "etag": "W/\"94-N1mwyq6MnCDDPIgxQJPK5VmwTek\""
+        "etag": "W/\"94-YkUwCc9gqWvHvgdFK+nfYhmXo8Q\""
       }
     }
-    [35mresponseTime[39m: 4
-[04:15:25.483] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 3
+[04:51:20.098] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 13,
       "method": "GET",
-      "url": "/wagering/transactions/01a12e52-9127-7129-a803-f7db0169f0a3",
+      "url": "/wagering/transactions/01a12e73-719f-75f0-bec9-18b37f67a39a",
       "headers": {}
     }
     [35mres[39m: {
@@ -464,15 +464,15 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "600",
-        "etag": "W/\"258-GNZwN8il9PDrDgd3jnNur6aHhRA\""
+        "etag": "W/\"258-BS63HJj8CaIXq9+9RDVTXo6u68E\""
       }
     }
     [35mresponseTime[39m: 1
-[04:15:25.484] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.099] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 14,
       "method": "GET",
-      "url": "/providers/prov-http-suite/wagering/transactions/bet-http-01a12e52-9125-735d-b17b-8683a4523b6e",
+      "url": "/providers/prov-http-suite/wagering/transactions/bet-http-01a12e73-719d-725e-a416-bef80fdcbeb4",
       "headers": {}
     }
     [35mres[39m: {
@@ -481,11 +481,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "600",
-        "etag": "W/\"258-GNZwN8il9PDrDgd3jnNur6aHhRA\""
+        "etag": "W/\"258-BS63HJj8CaIXq9+9RDVTXo6u68E\""
       }
     }
     [35mresponseTime[39m: 1
-[04:15:25.487] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.102] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 15,
       "method": "POST",
@@ -498,17 +498,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-T/yvHaFYk79vY3bgGO5Hg+xj+G4\""
+        "etag": "W/\"9a-ziCw0AM3GAUnjW/iL4pCTaoe+Ss\""
       }
     }
     [35mresponseTime[39m: 3
-[04:15:25.490] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.104] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 16,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-refund-ooo-01a12e52-912f-723f-ae56-1c411b49af6d"
+        "idempotency-key": "key-refund-ooo-01a12e73-71a6-721b-924d-52550f525705"
       }
     }
     [35mres[39m: {
@@ -517,11 +517,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "157",
-        "etag": "W/\"9d-wxs2LBRvuY5iFr30pFA6k1F5eg4\""
+        "etag": "W/\"9d-L81CCbAQxNje5n8V59Nk290sDLU\""
       }
     }
-    [35mresponseTime[39m: 3
-[04:15:25.493] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[04:51:20.107] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 17,
       "method": "POST",
@@ -534,17 +534,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "153",
-        "etag": "W/\"99-jX+fxeqPaeRyprouyw0p6nD8pnE\""
+        "etag": "W/\"99-x9gKKraSXlokWrQv3bfLVk/QYF8\""
       }
     }
-    [35mresponseTime[39m: 3
-[04:15:25.495] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[04:51:20.109] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 18,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-bet-excess-01a12e52-9135-754a-ab72-8c86a0ef4da2"
+        "idempotency-key": "key-bet-excess-01a12e73-71ab-76e1-8607-316d1b7c63ed"
       }
     }
     [35mres[39m: {
@@ -553,11 +553,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "184",
-        "etag": "W/\"b8-uJcmrNtJvnDiN1mHfUI01TIXW0I\""
+        "etag": "W/\"b8-G2EhicU8RSIJDv8Lk/G2+gQQKh4\""
       }
     }
     [35mresponseTime[39m: 2
-[04:15:25.498] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.112] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 19,
       "method": "POST",
@@ -570,17 +570,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "153",
-        "etag": "W/\"99-2pXaoDpFFdr5NMlh856WZpuxUwI\""
+        "etag": "W/\"99-T6nmNZGbJbIJuaPUfa1JUsKp2Bk\""
       }
     }
     [35mresponseTime[39m: 3
-[04:15:25.502] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.115] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 20,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-bet-r9-01a12e52-913a-742b-a28f-9d4516f6b885"
+        "idempotency-key": "key-bet-r9-01a12e73-71b0-762a-999b-1d90befa0183"
       }
     }
     [35mres[39m: {
@@ -589,17 +589,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "147",
-        "etag": "W/\"93-/GKTHLAdEatbRnaY8ZL/RMxGY3U\""
+        "etag": "W/\"93-dkVSzVLvBo/FHjQkGV6NHmLOUos\""
       }
     }
-    [35mresponseTime[39m: 4
-[04:15:25.506] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 3
+[04:51:20.117] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 21,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-win-r9-01a12e52-913e-74d0-a86a-b63d653ca475"
+        "idempotency-key": "key-win-r9-01a12e73-71b3-737b-bb09-0fedb90855c3"
       }
     }
     [35mres[39m: {
@@ -608,17 +608,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "149",
-        "etag": "W/\"95-2E11RX7uTebOmoJg6t0cF8ZT3CU\""
+        "etag": "W/\"95-AnMS30aPU9+za3kfszHdBdihsNQ\""
       }
     }
-    [35mresponseTime[39m: 3
-[04:15:25.510] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[04:51:20.120] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 22,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-saque-r9-01a12e52-9142-701f-bbfe-9d6fee8f5eba"
+        "idempotency-key": "key-saque-r9-01a12e73-71b6-778c-b3c9-59e4d95d20fc"
       }
     }
     [35mres[39m: {
@@ -627,17 +627,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "147",
-        "etag": "W/\"93-eStUSj8ckSGO7VA8XUxieQR9S6Q\""
+        "etag": "W/\"93-g4x3HgsIpywtrSKBZnZXFOhZxSk\""
       }
     }
-    [35mresponseTime[39m: 3
-[04:15:25.514] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[04:51:20.123] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 23,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-rollback-r9-01a12e52-9146-76b9-8a2e-0b79c2e2f2c7"
+        "idempotency-key": "key-rollback-r9-01a12e73-71b8-76b3-953e-fe85b221dea4"
       }
     }
     [35mres[39m: {
@@ -646,15 +646,15 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "192",
-        "etag": "W/\"c0-eL1oOEdmIkIZBM9tDN2F2++BtL8\""
+        "etag": "W/\"c0-W8krlTsfhkwQdeOe8ZBOUC691o4\""
       }
     }
-    [35mresponseTime[39m: 4
-[04:15:25.515] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[04:51:20.124] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 24,
       "method": "GET",
-      "url": "/wallets/01a12e52-9138-73c3-841c-87c98f44c268",
+      "url": "/wallets/01a12e73-71ae-740d-8e40-0f3c5e1c5a19",
       "headers": {}
     }
     [35mres[39m: {
@@ -663,15 +663,15 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "152",
-        "etag": "W/\"98-UebFdTn1BTAF02+ys2wxD4OoE9U\""
+        "etag": "W/\"98-HbPu5ASDVQ8ZTBlitNppAtZttVA\""
       }
     }
-    [35mresponseTime[39m: 1
-[04:15:25.527] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 0
+[04:51:20.143] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 25,
       "method": "POST",
-      "url": "/wallets/01a12e52-9138-73c3-841c-87c98f44c268/reconciliation",
+      "url": "/wallets/01a12e73-71ae-740d-8e40-0f3c5e1c5a19/reconciliation",
       "headers": {}
     }
     [35mres[39m: {
@@ -680,11 +680,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "268",
-        "etag": "W/\"10c-P/9B3MzDUb6xfdwMpIgyC8sHSVg\""
+        "etag": "W/\"10c-VpC3TC2g2Zhf+WT1BDQaR9/ae8s\""
       }
     }
-    [35mresponseTime[39m: 12
-[04:15:25.527] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 19
+[04:51:20.144] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 26,
       "method": "POST",
@@ -700,12 +700,12 @@ bun test v1.4.2 (744846f84)
         "etag": "W/\"17a-VUPeTS06XWhCQRYaH5co+4otUfg\""
       }
     }
-    [35mresponseTime[39m: 0
-[04:15:25.528] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 1
+[04:51:20.144] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 27,
       "method": "GET",
-      "url": "/wallets/01a12e52-9158-731d-8596-bae1258716fd",
+      "url": "/wallets/01a12e73-71d0-77cd-9ed1-31aa1e9dc174",
       "headers": {}
     }
     [35mres[39m: {
@@ -714,11 +714,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "105",
-        "etag": "W/\"69-Pc+4ubIpPXlx7LWNyyFi+ruGXiM\""
+        "etag": "W/\"69-QPaIv/A2F/ac8LYNg/gUAgwk2+A\""
       }
     }
     [35mresponseTime[39m: 0
-[04:15:25.532] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.148] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 28,
       "method": "POST",
@@ -731,17 +731,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-ZWEbOpapqHCK1v6MD2nP0oIyb/g\""
+        "etag": "W/\"9a-wWzBkrtRWpGpjkoc5TMcc17yFO8\""
       }
     }
     [35mresponseTime[39m: 3
-[04:15:25.536] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.151] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 29,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-shared-01a12e52-915c-7601-908d-89088fe858f1"
+        "idempotency-key": "key-shared-01a12e73-71d4-7505-87e4-b61a4e49f80e"
       }
     }
     [35mres[39m: {
@@ -750,17 +750,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "148",
-        "etag": "W/\"94-vIimMq4W1o596bI0nAN1AXnHt0c\""
+        "etag": "W/\"94-FG0lDuzCbn9U7KcZTwLTbyaYeaU\""
       }
     }
     [35mresponseTime[39m: 3
-[04:15:25.538] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.152] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 30,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-shared-01a12e52-915c-7601-908d-89088fe858f1"
+        "idempotency-key": "key-shared-01a12e73-71d4-7505-87e4-b61a4e49f80e"
       }
     }
     [35mres[39m: {
@@ -769,11 +769,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "177",
-        "etag": "W/\"b1-qbsA9MK1S04FIXehRKCIVQT8mzo\""
+        "etag": "W/\"b1-J4W5RyIczxyuPtOjLD8QK7IQMe4\""
       }
     }
-    [35mresponseTime[39m: 2
-[04:15:25.559] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 1
+[04:51:20.174] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 1,
       "method": "GET",
@@ -786,11 +786,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "144",
-        "etag": "W/\"90-Ku6GqlB3c7+wdRzG0L06UgZS2J4\""
+        "etag": "W/\"90-Xl0rXSIC3bqWtd++0oeViJmWkXw\""
       }
     }
     [35mresponseTime[39m: 4
-[04:15:25.584] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.204] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 1,
       "method": "POST",
@@ -803,17 +803,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "154",
-        "etag": "W/\"9a-U3R2MkdA52YK88vi+w63xCewSlk\""
+        "etag": "W/\"9a-SU13XveIBCqyl+FcmYcOE1VjZ9w\""
       }
     }
-    [35mresponseTime[39m: 8
-[04:15:25.590] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 14
+[04:51:20.211] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 2,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-metric-bet-01a12e52-9190-779c-b495-2262fd0c2e5b"
+        "idempotency-key": "key-metric-bet-01a12e73-720c-758f-940a-8b3b81b3ea32"
       }
     }
     [35mres[39m: {
@@ -822,17 +822,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "148",
-        "etag": "W/\"94-Q87z7UzgzoaI6ozcanImbRraQH8\""
+        "etag": "W/\"94-IQFl8pIWqKPVq3Y1d16F8bd+v9Y\""
       }
     }
-    [35mresponseTime[39m: 5
-[04:15:25.592] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 6
+[04:51:20.213] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 3,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-metric-bet-01a12e52-9190-779c-b495-2262fd0c2e5b"
+        "idempotency-key": "key-metric-bet-01a12e73-720c-758f-940a-8b3b81b3ea32"
       }
     }
     [35mres[39m: {
@@ -841,17 +841,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "166",
-        "etag": "W/\"a6-p5848FsBA26trz4403NoVtgz2OA\""
+        "etag": "W/\"a6-QTSJi20VBEXevDC8I2lOEsf135o\""
       }
     }
     [35mresponseTime[39m: 2
-[04:15:25.594] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:20.216] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 4,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-metric-rej-01a12e52-9198-75e5-9276-62df299fe108"
+        "idempotency-key": "key-metric-rej-01a12e73-7215-757d-9e92-2d9d56015a45"
       }
     }
     [35mres[39m: {
@@ -860,17 +860,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "184",
-        "etag": "W/\"b8-OHd/uBeRRmf8DqtZBpt7WrGR0EI\""
+        "etag": "W/\"b8-zWQtC7oPbfNmHdwkk9TRVgREorg\""
       }
     }
-    [35mresponseTime[39m: 2
-[04:15:25.598] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 3
+[04:51:20.218] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 5,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-metric-ooo-01a12e52-919a-74a9-9d0c-8c3561b6da82"
+        "idempotency-key": "key-metric-ooo-01a12e73-7218-76a2-8894-1c86658e1a06"
       }
     }
     [35mres[39m: {
@@ -879,11 +879,11 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "156",
-        "etag": "W/\"9c-CPRBGwngaYg/gWkZ7aAwtXU1vZo\""
+        "etag": "W/\"9c-nqqQSXrS+Ztb43jfQxfDSQB4VG0\""
       }
     }
-    [35mresponseTime[39m: 4
-[04:15:25.608] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[04:51:20.228] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 6,
       "method": "GET",
@@ -895,18 +895,18 @@ bun test v1.4.2 (744846f84)
       "headers": {
         "x-powered-by": "Express",
         "content-type": "text/plain; charset=utf-8; version=0.0.4",
-        "content-length": "20677",
-        "etag": "W/\"50c5-2qCqOrSwJ6UKROZmU+jzzYWBpx0\""
+        "content-length": "20685",
+        "etag": "W/\"50cd-0FsGA0mtQZZM/iEewC1UeENlFWI\""
       }
     }
     [35mresponseTime[39m: 10
-[04:15:30.128] [32mINFO[39m (12027): [36mrequest errored[39m
+[04:51:24.841] [32mINFO[39m (15291): [36mrequest errored[39m
     [35mreq[39m: {
       "id": 1,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-stublock-01a12e52-a1b6-7446-a074-e18c37a45664"
+        "idempotency-key": "key-stublock-01a12e73-82c4-729a-a38e-3deb2aab7d18"
       }
     }
     [35mres[39m: {
@@ -919,7 +919,7 @@ bun test v1.4.2 (744846f84)
         "etag": "W/\"50-ktWnsrv4K8dvvKQ2VSVczucyyHM\""
       }
     }
-    [35mresponseTime[39m: 408
+    [35mresponseTime[39m: 356
     err: {
       "type": "Error",
       "message": "failed with status code 503",
@@ -930,13 +930,13 @@ bun test v1.4.2 (744846f84)
               at <anonymous> (node:_http_server:1686:16)
               at processTicksAndRejections (native:7:39)
     }
-[04:15:30.732] [32mINFO[39m (12027): [36mrequest errored[39m
+[04:51:25.391] [32mINFO[39m (15291): [36mrequest errored[39m
     [35mreq[39m: {
       "id": 2,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-realdetlock-01a12e52-a36e-773c-b981-d5229dbefc05"
+        "idempotency-key": "key-realdetlock-01a12e73-843f-72a2-b2e4-bfc75fa91219"
       }
     }
     [35mres[39m: {
@@ -949,7 +949,7 @@ bun test v1.4.2 (744846f84)
         "etag": "W/\"50-ktWnsrv4K8dvvKQ2VSVczucyyHM\""
       }
     }
-    [35mresponseTime[39m: 572
+    [35mresponseTime[39m: 527
     err: {
       "type": "Error",
       "message": "failed with status code 503",
@@ -960,13 +960,13 @@ bun test v1.4.2 (744846f84)
               at <anonymous> (node:_http_server:1686:16)
               at processTicksAndRejections (native:7:39)
     }
-[04:15:30.793] [32mINFO[39m (12027): [36mrequest completed[39m
+[04:51:25.403] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 3,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-A-01a12e52-a5c5-76c6-b5bc-630918593510"
+        "idempotency-key": "key-A-01a12e73-8654-727f-9da1-2f7a88056df4"
       }
     }
     [35mres[39m: {
@@ -975,17 +975,17 @@ bun test v1.4.2 (744846f84)
         "x-powered-by": "Express",
         "content-type": "application/json; charset=utf-8",
         "content-length": "148",
-        "etag": "W/\"94-vYpNi0yYVRwAfVGCEu+2kkwzqB0\""
+        "etag": "W/\"94-HkRIWgmSfalAfzU7P2nLnU+4MDE\""
       }
     }
-    [35mresponseTime[39m: 35
-[04:15:30.815] [32mINFO[39m (12027): [36mrequest completed[39m
+    [35mresponseTime[39m: 6
+[04:51:25.408] [32mINFO[39m (15291): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 4,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-B-01a12e52-a5e9-7074-a090-dae2d1da1a31"
+        "idempotency-key": "key-B-01a12e73-865b-7597-b4a4-b5dee18979ba"
       }
     }
     [35mres[39m: {
@@ -997,14 +997,14 @@ bun test v1.4.2 (744846f84)
         "etag": "W/\"9d-Y0xZ5GIGEsJ00b2S/RqZgzv7OSw\""
       }
     }
-    [35mresponseTime[39m: 21
-[04:15:30.841] [32mINFO[39m (12027): [36mrequest errored[39m
+    [35mresponseTime[39m: 5
+[04:51:25.414] [32mINFO[39m (15291): [36mrequest errored[39m
     [35mreq[39m: {
       "id": 5,
       "method": "POST",
       "url": "/wagering/transactions",
       "headers": {
-        "idempotency-key": "key-503-01a12e52-a617-746d-83c4-79fbd16d0a7f"
+        "idempotency-key": "key-503-01a12e73-8665-726e-810a-885b2a0ae346"
       }
     }
     [35mres[39m: {
@@ -1073,7 +1073,7 @@ src/test/integration/invariants-resilience.spec.ts:
 [90m[migrator] [39mProcessing 'Migration20261012000002_retention_indexes'
 [90m[migrator] [39mApplied 'Migration20261012000002_retention_indexes'
 
- 71 pass
+ 73 pass
  0 fail
- 357 expect() calls
-Ran 71 tests across 17 files. [12.69s]
+ 363 expect() calls
+Ran 73 tests across 18 files. [12.77s]
