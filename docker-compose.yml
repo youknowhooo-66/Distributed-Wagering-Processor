@@ -1,0 +1,109 @@
+# Fixed project name: container names are fixed below, so the project must not depend on
+# the checkout folder name (a different folder would try to recreate jungle-* containers).
+name: distributedwageringprocessor
+
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://jungle:jungle_secret@postgres:5432/wagering
+  SQS_ENDPOINT: http://localstack:4566
+  # Queue URLs must point at the localstack host: the SDK uses the QueueUrl host as endpoint
+  SQS_WAGER_QUEUE_URL: http://localstack:4566/000000000000/wager-transactions.fifo
+  SQS_WAGER_DLQ_URL: http://localstack:4566/000000000000/wager-transactions-dlq.fifo
+  SQS_EVENTS_QUEUE_URL: http://localstack:4566/000000000000/wagering-events.fifo
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  PORT: 3000
+  ENABLE_BACKGROUND_POLL: "true"
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: jungle-wagering-processor:local
+  depends_on:
+    postgres:
+      condition: service_healthy
+    localstack:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jungle-postgres
+    environment:
+      POSTGRES_DB: wagering
+      POSTGRES_USER: jungle
+      POSTGRES_PASSWORD: jungle_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jungle -d wagering"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  localstack:
+    image: localstack/localstack:3
+    container_name: jungle-localstack
+    environment:
+      SERVICES: sqs
+      DEFAULT_REGION: us-east-1
+      EAGER_SERVICE_LOADING: 1
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./infra/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
+      - localstack_data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "awslocal", "sqs", "list-queues"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jungle-wagering-processor:local
+    environment: *app-env
+    command: ["bun", "dist/shared/infrastructure/database/run-migrations.js"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app-1:
+    <<: *app
+    container_name: jungle-app-1
+    environment:
+      <<: *app-env
+      INSTANCE_ID: app-1
+    ports:
+      - "3011:3000"
+
+  app-2:
+    <<: *app
+    container_name: jungle-app-2
+    environment:
+      <<: *app-env
+      INSTANCE_ID: app-2
+    ports:
+      - "3012:3000"
+
+  app-3:
+    <<: *app
+    container_name: jungle-app-3
+    environment:
+      <<: *app-env
+      INSTANCE_ID: app-3
+    ports:
+      - "3013:3000"
+
+volumes:
+  postgres_data:
+  localstack_data:
