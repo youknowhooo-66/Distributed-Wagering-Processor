@@ -33,6 +33,8 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: jungle-postgres
+    # Docker's 64 MB /dev/shm is too small for parallel queries (dynamic shared memory)
+    shm_size: 256mb
     environment:
       POSTGRES_DB: wagering
       POSTGRES_USER: jungle

@@ -161,7 +161,8 @@ export class WalletRepository implements WalletRepositoryPort {
            WHERE t.wallet_id = ?
              AND t.status = 'PROCESSED'
              AND t.kind <> 'LOSS'
-             AND NOT EXISTS (SELECT 1 FROM wallet_ledger_entries l WHERE l.transaction_id = t.id))
+             AND NOT EXISTS (SELECT 1 FROM wallet_ledger_entries l
+                              WHERE l.wallet_id = t.wallet_id AND l.transaction_id = t.id))
          AS mismatches`,
       [walletId, walletId],
     );
