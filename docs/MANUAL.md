@@ -38,6 +38,9 @@ bun run dev
 | `ENABLE_BACKGROUND_POLL` | `true` | Liga/desliga o consumer SQS em background. **Deve ser `true` em produção** (configurado no `docker-compose.yml`). Testes automatizados definem como `false` para evitar loops de polling. |
 | `DATABASE_URL` | — | URL de conexão PostgreSQL 16. |
 | `SQS_ENDPOINT` | — | Endpoint do SQS (LocalStack em dev: `http://localhost:4566`). |
+| `DB_POOL_MAX` | `10` | Conexões por instância. Medido: 20 reduz o p99 do tráfego distribuído em ~10%, mas piora a hot wallet em ~40% (mais backends na fila do mesmo lock de linha). Some as instâncias e mantenha abaixo de `max_connections`. |
+| `DB_LOCK_TIMEOUT_MS` | `5000ms` | Espera máxima pelo lock da wallet (parâmetro de sessão da conexão). Timeout vira retry e, esgotado, 503. |
+| `LOG_LEVEL` | `info` | Nível do logger. O log de acesso HTTP registra só falhas (4xx `warn`, 5xx `error`). |
 
 Copie `.env.example` para `.env` e ajuste os valores para o seu ambiente.
 

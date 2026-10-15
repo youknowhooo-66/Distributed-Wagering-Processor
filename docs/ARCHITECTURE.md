@@ -53,7 +53,7 @@ O sistema é construído sobre os princípios de **Domain-Driven Design (DDD)** 
 
 ### Portas de Persistência (`UnitOfWork`)
 - Os casos de uso dependem apenas de portas: `UnitOfWork` (`src/shared/application/ports/unit-of-work.port.ts`), `WalletRepositoryPort`, `WagerTransactionRepositoryPort` e `WageringMetrics` (telemetria, adaptador Prometheus em `src/shared/infrastructure/metrics/`). Nenhum arquivo de `*/application/` importa `infrastructure/`.
-- `UnitOfWork.transactional(work)` abre a transação e entrega um `TransactionScope` com os repositórios ligados a ela. O adaptador `MikroOrmUnitOfWork` aplica `SET LOCAL lock_timeout` (valor validado) e traduz erros do PostgreSQL por **SQLSTATE** para erros tipados da aplicação:
+- `UnitOfWork.transactional(work)` abre a transação e entrega um `TransactionScope` com os repositórios ligados a ela. O `lock_timeout` é parâmetro de sessão de cada conexão do pool (enviado ao conectar, em `mikro-orm.config.ts`), sem um comando extra por transação. O adaptador `MikroOrmUnitOfWork` traduz erros do PostgreSQL por **SQLSTATE** para erros tipados da aplicação:
 
 | SQLSTATE / origem | Erro de aplicação | Tratamento no caso de uso |
 |---|---|---|
@@ -79,7 +79,7 @@ A unidade de concorrência é a **Wallet (`walletId`)**. Decisão e medições e
 
 - **Serialização por wallet:** toda transação financeira começa com `SELECT ... FOR UPDATE` na linha da wallet (`WalletRepositoryPort.findByIdForUpdate`). Transações da mesma wallet entram em fila no PostgreSQL; wallets diferentes seguem em paralelo.
 - **Ordem única de lock:** a wallet é sempre o primeiro lock adquirido (inclusive pelo worker de referências pendentes), o que elimina deadlocks entre fluxos financeiros.
-- **`lock_timeout`:** `SET LOCAL lock_timeout` (padrão `5000ms`, `DB_LOCK_TIMEOUT_MS`) limita a espera; o timeout (`55P03`) é tratado como conflito de concorrência e retentado.
+- **`lock_timeout`:** parâmetro de sessão de cada conexão (padrão `5000ms`, `DB_LOCK_TIMEOUT_MS`; valor inválido é recusado pelo PostgreSQL ao abrir a conexão) limita a espera; o timeout (`55P03`) é tratado como conflito de concorrência e retentado.
 - **Versão como barreira:** a coluna `version` continua sendo verificada no `UPDATE`; um conflito de versão também é retentado.
 - **Retry limitado:** até 6 tentativas com jitter (`20ms × tentativa` + até `40ms`); esgotadas, HTTP 503 com `Retry-After: 1` (no consumer SQS, backoff via visibilidade da mensagem).
 - **Defesa em Profundidade:** `chk_wallets_balance_non_negative CHECK (balance_amount >= 0)` impede saldo negativo no próprio banco.

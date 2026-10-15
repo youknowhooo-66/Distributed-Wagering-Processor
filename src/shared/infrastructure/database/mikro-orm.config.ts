@@ -24,6 +24,10 @@ export default defineConfig({
   ],
   extensions: [Migrator],
   allowGlobalContext: true,
+  pool: { max: Number(process.env.DB_POOL_MAX) || 10 },
+  // Session setting sent at connect time: no SET LOCAL round trip per transaction, and an
+  // invalid value is rejected by PostgreSQL when the first connection opens.
+  driverOptions: { connection: { options: `-c lock_timeout=${process.env.DB_LOCK_TIMEOUT_MS || '5000ms'}` } },
   // Under Bun MikroORM detects TS support even when running compiled JS from dist/,
   // which would point the migrator at ./src/migrations (absent in the image).
   preferTs: __filename.endsWith('.ts'),
