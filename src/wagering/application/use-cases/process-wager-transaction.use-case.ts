@@ -15,10 +15,12 @@ import {
 } from '../../domain/wager-transaction.entity';
 import { InboxMessage } from '../../domain/inbox-message.entity';
 import { OutboxMessage } from '../../domain/outbox-message.entity';
+import { checkReference, checkWalletOwnership, settle } from '../../domain/wager-rules';
 import {
   FailureCode,
   IdempotencyConflictError,
 } from '../../../shared/domain/errors';
+import type { EventContext } from '../../../shared/domain/events/event-context';
 import { WagerTransactionProcessed } from '../../domain/events/wager-transaction-processed.event';
 import { WagerTransactionRejected } from '../../domain/events/wager-transaction-rejected.event';
 import { WagerTransactionFailed } from '../../domain/events/wager-transaction-failed.event';
@@ -26,7 +28,7 @@ import { WagerTransactionPendingReference } from '../../domain/events/wager-tran
 import { WalletBalanceChanged } from '../../domain/events/wallet-balance-changed.event';
 import { computePayloadHash } from '../../../shared/domain/canonical-hash';
 import { generateId } from '../../../shared/domain/identifier';
-import { LedgerDirection, WalletLedgerEntry } from '../../../wallet/domain/wallet-ledger-entry.entity';
+import type { Wallet } from '../../../wallet/domain/wallet.entity';
 import type { WagerTransactionRepositoryPort } from '../../domain/wager-transaction.repository.port';
 import {
   ConcurrencyConflictError,
@@ -50,6 +52,8 @@ export interface ProcessWagerCommand {
   kind: WagerTransactionKind;
   money: MoneyProps;
   referenceExternalTransactionId?: string;
+  /** Propagated to logs and to the integration events (HTTP: X-Correlation-Id; SQS: envelope). */
+  correlationId?: string;
   // SQS metadata (optional)
   sqsMessageId?: string;
   consumerName?: string;
@@ -96,7 +100,7 @@ export class ProcessWagerTransactionUseCase {
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
         const result = await this.uow.transactional((scope) => this.process(scope, cmd, payloadHash));
-        this.recordOutcomeMetrics(cmd.kind, result, Date.now() - t0);
+        this.recordOutcome(cmd, result, Date.now() - t0);
         return result;
       } catch (err: unknown) {
         if (err instanceof UniqueViolationError && err.constraint === UQ_REFERENCE_REVERSAL) {
@@ -106,14 +110,20 @@ export class ProcessWagerTransactionUseCase {
             payloadHash,
             FailureCode.REFERENCE_ALREADY_REVERSED,
           );
-          this.recordOutcomeMetrics(cmd.kind, result, Date.now() - t0);
+          this.recordOutcome(cmd, result, Date.now() - t0);
           return result;
         }
 
         if (err instanceof UniqueViolationError && err.constraint === UQ_PROVIDER_EXTERNAL) {
+          this.logger.warn({ msg: 'external id reused under a different Idempotency-Key', ...this.logFields(cmd) });
           throw new ConflictException(
             'Transaction with this providerId and externalTransactionId already exists under a different Idempotency-Key',
           );
+        }
+
+        if (err instanceof IdempotencyConflictError) {
+          this.logger.warn({ msg: 'idempotency conflict: same key, different payload', ...this.logFields(cmd) });
+          throw err;
         }
 
         // Lock/version conflicts, or a concurrent insert of the same idempotency key
@@ -132,6 +142,7 @@ export class ProcessWagerTransactionUseCase {
       }
     }
 
+    this.logger.warn({ msg: 'concurrency retries exhausted', attempts: this.MAX_RETRIES, ...this.logFields(cmd) });
     throw new ServiceUnavailableException('Concurrency limit exceeded on wallet modification');
   }
 
@@ -152,20 +163,18 @@ export class ProcessWagerTransactionUseCase {
     const cmd = normalizeIds(input);
     const payloadHash = this.payloadHashOf(cmd);
 
-    return this.uow.transactional(async ({ wallets, wagers }) => {
+    const result = await this.uow.transactional(async ({ wallets, wagers }) => {
       const wallet = await wallets.findById(cmd.walletId);
       const balance = wallet ? wallet.balance : Money.zero(cmd.money.currency);
       const now = new Date();
 
       const tx = this.newTransaction(cmd, payloadHash, Money.from(cmd.money), now);
-      tx.fail(failureCode, balance);
+      tx.fail(failureCode, now, balance);
       await wagers.save(tx);
       await this.saveInbox(wagers, cmd, payloadHash, now);
 
-      const failedEvent = WagerTransactionFailed.from(tx, failureCode, { correlationId: tx.id });
+      const failedEvent = WagerTransactionFailed.from(tx, failureCode, this.eventContext(cmd, tx));
       await wagers.saveOutboxMessage(OutboxMessage.enqueue(failedEvent));
-
-      this.metrics.transactionFailed(cmd.kind);
 
       return {
         transactionId: tx.id,
@@ -175,6 +184,9 @@ export class ProcessWagerTransactionUseCase {
         failureCode,
       };
     });
+    this.metrics.transactionFailed(cmd.kind);
+    this.logger.error({ msg: 'transaction recorded as FAILED', ...this.logFields(cmd, result) });
+    return result;
   }
 
   /** Single processing flow: wallet lock -> idempotency -> reference -> money movement -> outbox. */
@@ -213,32 +225,35 @@ export class ProcessWagerTransactionUseCase {
     if (cmd.sqsMessageId && cmd.consumerName) {
       const existingInbox = await wagers.findInboxMessage(cmd.consumerName, cmd.sqsMessageId);
       if (existingInbox?.isProcessed()) {
-        this.logger.log(`Inbox dedup: message ${cmd.sqsMessageId} already processed`);
         const existingByExt = await wagers.findByProviderAndExternalId(
           cmd.providerId,
           cmd.externalTransactionId,
         );
         if (existingByExt) {
+          this.logger.log({ msg: 'inbox dedup: message already processed', ...this.logFields(cmd) });
           return {
             transactionId: existingByExt.id,
             status: existingByExt.status,
             balance: existingByExt.balanceAfter?.toJSON(),
             idempotentReplay: true,
+            failureCode: existingByExt.failureCode,
           };
         }
       }
     }
 
-    // 4. Currency
-    if (wallet.currency !== cmd.money.currency) {
-      return this.recordRejection(scope, cmd, payloadHash, wallet, FailureCode.CURRENCY_MISMATCH);
+    // 4. The wallet must belong to the player and currency of the operation
+    const ownershipError = checkWalletOwnership(
+      { playerId: cmd.playerId, currency: cmd.money.currency },
+      wallet,
+    );
+    if (ownershipError) {
+      return this.recordRejection(scope, cmd, payloadHash, wallet, ownershipError, existingTx ?? undefined);
     }
 
     const now = new Date();
     // Resume an existing PENDING_REFERENCE transaction or create a new one in PENDING
     const wagerTx = existingTx ?? this.newTransaction(cmd, payloadHash, Money.from(cmd.money), now);
-    // Always operate on the persisted values (a resumed PENDING_REFERENCE tx keeps its original amount)
-    const operationMoney = wagerTx.money;
 
     // 5. Reference resolution
     let referenceTx: WagerTransaction | null = null;
@@ -247,64 +262,28 @@ export class ProcessWagerTransactionUseCase {
         cmd.providerId,
         wagerTx.referenceExternalTransactionId!,
       );
+      const check = referenceTx
+        ? checkReference(
+            wagerTx,
+            referenceTx,
+            referenceTx.status === WagerTransactionStatus.Processed && (await wagers.hasReversal(referenceTx.id)),
+          )
+        : ({ outcome: 'WAIT' } as const);
 
-      if (!referenceTx) {
-        // Out of order: reference not found yet -> PENDING_REFERENCE
-        wagerTx.markPendingReference();
-        wagerTx.scheduleRetry(now);
-        await wagers.save(wagerTx);
-
-        const pendingEvent = WagerTransactionPendingReference.from(wagerTx, { correlationId: wagerTx.id });
-        await wagers.saveOutboxMessage(OutboxMessage.enqueue(pendingEvent));
-
-        return {
-          transactionId: wagerTx.id,
-          status: WagerTransactionStatus.PendingReference,
-          balance: wallet.balance.toJSON(),
-          idempotentReplay: false,
-        };
+      if (check.outcome === 'WAIT') {
+        return this.awaitReference(scope, cmd, payloadHash, wallet, wagerTx, existingTx !== null, now);
       }
-
-      const validationError = await this.validateReference(wagerTx, referenceTx, wagers);
-      if (validationError) {
-        return this.recordRejection(scope, cmd, payloadHash, wallet, validationError, wagerTx);
+      if (check.outcome === 'REJECT') {
+        return this.recordRejection(scope, cmd, payloadHash, wallet, check.failureCode, wagerTx);
       }
     }
 
-    // 6. Money movement
-    let ledgerEntry: WalletLedgerEntry | undefined;
-    switch (cmd.kind) {
-      case WagerTransactionKind.Bet:
-        if (wallet.balance.isLessThan(operationMoney)) {
-          return this.recordRejection(scope, cmd, payloadHash, wallet, FailureCode.INSUFFICIENT_BALANCE, wagerTx);
-        }
-        ledgerEntry = wallet.debit(wagerTx.id, operationMoney, now);
-        break;
-      case WagerTransactionKind.Win:
-      case WagerTransactionKind.Refund: // Refund re-credits the bet
-        ledgerEntry = wallet.credit(wagerTx.id, operationMoney, now);
-        break;
-      case WagerTransactionKind.Loss:
-        break; // No balance movement, no ledger entry
-      case WagerTransactionKind.Rollback:
-        // Inverse of the reference
-        if (wagerTx.ledgerDirectionFor(referenceTx!) === LedgerDirection.Debit) {
-          if (wallet.balance.isLessThan(operationMoney)) {
-            return this.recordRejection(
-              scope,
-              cmd,
-              payloadHash,
-              wallet,
-              FailureCode.REVERSAL_INSUFFICIENT_BALANCE,
-              wagerTx,
-            );
-          }
-          ledgerEntry = wallet.debit(wagerTx.id, operationMoney, now);
-        } else {
-          ledgerEntry = wallet.credit(wagerTx.id, operationMoney, now);
-        }
-        break;
+    // 6. Money movement (pure domain rules)
+    const settlement = settle(wagerTx, wallet, referenceTx, now);
+    if (!settlement.applied) {
+      return this.recordRejection(scope, cmd, payloadHash, wallet, settlement.failureCode, wagerTx);
     }
+    const ledgerEntry = settlement.entry;
 
     // 7. Persist atomically: wallet (version-checked), ledger, transaction, inbox, outbox
     wagerTx.markProcessed(referenceTx?.id, now, wallet.balance);
@@ -315,11 +294,10 @@ export class ProcessWagerTransactionUseCase {
     await wagers.save(wagerTx);
     await this.saveInbox(wagers, cmd, payloadHash, now);
 
-    const processedEvent = WagerTransactionProcessed.from(wagerTx, { correlationId: wagerTx.id });
-    await wagers.saveOutboxMessage(OutboxMessage.enqueue(processedEvent));
+    const ctx = this.eventContext(cmd, wagerTx);
+    await wagers.saveOutboxMessage(OutboxMessage.enqueue(WagerTransactionProcessed.from(wagerTx, ctx)));
     if (ledgerEntry) {
-      const balanceEvent = WalletBalanceChanged.from(wallet, ledgerEntry, { correlationId: wagerTx.id });
-      await wagers.saveOutboxMessage(OutboxMessage.enqueue(balanceEvent));
+      await wagers.saveOutboxMessage(OutboxMessage.enqueue(WalletBalanceChanged.from(wallet, ledgerEntry, ctx)));
     }
 
     return {
@@ -330,45 +308,37 @@ export class ProcessWagerTransactionUseCase {
     };
   }
 
-  private async validateReference(
-    tx: WagerTransaction,
-    ref: WagerTransaction,
-    wagers: WagerTransactionRepositoryPort,
-  ): Promise<FailureCode | null> {
-    // Must be PROCESSED
-    if (ref.status !== WagerTransactionStatus.Processed) {
-      return FailureCode.REFERENCE_NOT_PROCESSED;
+  /**
+   * The reference is missing or still waiting itself. A new transaction is persisted as
+   * PENDING_REFERENCE (event + backoff for the worker); an identical resend of a transaction
+   * that is already waiting is answered as a replay and changes nothing — the worker owns the
+   * retry schedule.
+   */
+  private async awaitReference(
+    scope: TransactionScope,
+    cmd: ProcessWagerCommand,
+    payloadHash: string,
+    wallet: Wallet,
+    wagerTx: WagerTransaction,
+    alreadyWaiting: boolean,
+    now: Date,
+  ): Promise<ProcessWagerResult> {
+    const { wagers } = scope;
+    if (!alreadyWaiting) {
+      wagerTx.markPendingReference();
+      wagerTx.scheduleRetry(now);
+      await wagers.save(wagerTx);
+      const pendingEvent = WagerTransactionPendingReference.from(wagerTx, this.eventContext(cmd, wagerTx));
+      await wagers.saveOutboxMessage(OutboxMessage.enqueue(pendingEvent));
     }
+    await this.saveInbox(wagers, cmd, payloadHash, now);
 
-    // Must belong to same provider, player, wallet, round, currency
-    if (ref.providerId !== tx.providerId) return FailureCode.CROSS_PROVIDER_REFERENCE;
-    if (ref.playerId !== tx.playerId) return FailureCode.CROSS_PLAYER_REFERENCE;
-    if (ref.walletId !== tx.walletId) return FailureCode.CROSS_WALLET_REFERENCE;
-    if (ref.roundId !== tx.roundId) return FailureCode.CROSS_ROUND_REFERENCE;
-    if (ref.money.currency !== tx.money.currency) return FailureCode.CURRENCY_MISMATCH;
-
-    // Amount must match exactly
-    if (!ref.money.equals(tx.money)) {
-      return FailureCode.REVERSAL_AMOUNT_MISMATCH;
-    }
-
-    // REFUND can only reference BET; ROLLBACK can reference BET, WIN or REFUND
-    const allowedKinds =
-      tx.kind === WagerTransactionKind.Refund
-        ? [WagerTransactionKind.Bet]
-        : tx.kind === WagerTransactionKind.Rollback
-          ? [WagerTransactionKind.Bet, WagerTransactionKind.Win, WagerTransactionKind.Refund]
-          : null;
-    if (allowedKinds) {
-      if (!allowedKinds.includes(ref.kind)) {
-        return FailureCode.INVALID_REFERENCE_KIND;
-      }
-      if (await wagers.hasReversal(ref.id)) {
-        return FailureCode.REFERENCE_ALREADY_REVERSED;
-      }
-    }
-
-    return null;
+    return {
+      transactionId: wagerTx.id,
+      status: WagerTransactionStatus.PendingReference,
+      balance: wallet.balance.toJSON(),
+      idempotentReplay: alreadyWaiting,
+    };
   }
 
   private recordStandaloneRejection(
@@ -394,11 +364,11 @@ export class ProcessWagerTransactionUseCase {
     const now = new Date();
     const tx = existingTx ?? this.newTransaction(cmd, payloadHash, Money.from(cmd.money), now);
 
-    tx.reject(failureCode, wallet.balance);
+    tx.reject(failureCode, now, wallet.balance);
     await wagers.save(tx);
     await this.saveInbox(wagers, cmd, payloadHash, now);
 
-    const rejectedEvent = WagerTransactionRejected.from(tx, failureCode, { correlationId: tx.id });
+    const rejectedEvent = WagerTransactionRejected.from(tx, failureCode, this.eventContext(cmd, tx));
     await wagers.saveOutboxMessage(OutboxMessage.enqueue(rejectedEvent));
 
     return {
@@ -451,6 +421,11 @@ export class ProcessWagerTransactionUseCase {
     });
   }
 
+  /** correlationId: the caller's, else the transaction id; causationId: the SQS message, if any. */
+  private eventContext(cmd: ProcessWagerCommand, tx: WagerTransaction): EventContext {
+    return { correlationId: cmd.correlationId ?? tx.id, causationId: cmd.sqsMessageId };
+  }
+
   /** SHA-256 of the canonical business payload (transport metadata excluded). */
   private payloadHashOf(cmd: ProcessWagerCommand): string {
     return computePayloadHash({
@@ -472,7 +447,23 @@ export class ProcessWagerTransactionUseCase {
     }
   }
 
-  private recordOutcomeMetrics(kind: WagerTransactionKind, result: ProcessWagerResult, durationMs: number): void {
+  /** Identifiers only: amounts, balances and payloads never go to the logs. */
+  private logFields(cmd: ProcessWagerCommand, result?: ProcessWagerResult): Record<string, unknown> {
+    return {
+      correlationId: cmd.correlationId,
+      messageId: cmd.sqsMessageId,
+      transactionId: result?.transactionId,
+      walletId: cmd.walletId,
+      providerId: cmd.providerId,
+      externalTransactionId: cmd.externalTransactionId,
+      kind: cmd.kind,
+      status: result?.status,
+      failureCode: result?.failureCode,
+      idempotentReplay: result?.idempotentReplay,
+    };
+  }
+
+  private recordOutcome(cmd: ProcessWagerCommand, result: ProcessWagerResult, durationMs: number): void {
     const outcome = result.idempotentReplay
       ? 'idempotent_replay'
       : result.status === WagerTransactionStatus.Processed
@@ -482,6 +473,9 @@ export class ProcessWagerTransactionUseCase {
           : result.status === WagerTransactionStatus.PendingReference
             ? 'pending_reference'
             : 'failed';
-    this.metrics.transactionCompleted(kind, outcome, durationMs, result.failureCode);
+    this.metrics.transactionCompleted(cmd.kind, outcome, durationMs, result.failureCode);
+    const entry = { msg: `wager transaction ${outcome}`, durationMs, ...this.logFields(cmd, result) };
+    if (outcome === 'rejected') this.logger.warn(entry);
+    else this.logger.log(entry);
   }
 }

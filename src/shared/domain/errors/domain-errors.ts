@@ -67,6 +67,14 @@ export class InvalidTransactionStateError extends DomainError {
   }
 }
 
+export class MissingReferenceError extends DomainError {
+  readonly code = 'MISSING_REFERENCE';
+
+  constructor(kind: string) {
+    super(`${kind} transactions require a referenceExternalTransactionId`);
+  }
+}
+
 export class InvalidLedgerEntryError extends DomainError {
   readonly code = 'INVALID_LEDGER_ENTRY';
 
