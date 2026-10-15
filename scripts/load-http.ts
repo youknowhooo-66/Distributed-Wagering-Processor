@@ -27,7 +27,34 @@ interface Result {
   p99: number;
   max: number;
   errors: Record<string, number>;
+  /** Lock/version conflicts and retries recorded by the replicas during the scenario (deltas). */
+  lockConflicts: number;
+  retries: number;
+  /** Highest outbox lag (age of the oldest unpublished event) and backlog seen while loading. */
+  maxOutboxLagSeconds: number;
+  maxOutboxPending: number;
+  /** Time for the outbox to be fully published after the load stopped. */
+  drainSeconds: number;
 }
+
+/** Sum of every sample of a Prometheus metric in the text exposition format. */
+function metricSum(text: string, name: string): number {
+  let sum = 0;
+  for (const line of text.split('\n')) {
+    if (line.startsWith(name + ' ') || line.startsWith(name + '{')) {
+      const value = Number(line.slice(line.lastIndexOf(' ') + 1));
+      if (Number.isFinite(value)) sum += value;
+    }
+  }
+  return sum;
+}
+
+async function scrape(targets: string[]): Promise<string[]> {
+  return Promise.all(targets.map((t) => fetch(`${t}/metrics`).then((r) => r.text()).catch(() => '')));
+}
+
+const sumAcross = (texts: string[], name: string) => texts.reduce((acc, t) => acc + metricSum(t, name), 0);
+const maxAcross = (texts: string[], name: string) => Math.max(0, ...texts.map((t) => metricSum(t, name)));
 
 function parseArgs(argv: string[]): Options {
   const opts: Options = {
@@ -72,7 +99,21 @@ async function runScenario(scenario: 'distributed' | 'hot', opts: Options): Prom
 
   const latencies: number[] = [];
   const errors: Record<string, number> = {};
+  const before = await scrape(opts.targets);
   const deadline = performance.now() + opts.seconds * 1000;
+
+  // Outbox lag/backlog sampled while the load runs (gauges refreshed by every publisher poll)
+  let maxOutboxLagSeconds = 0;
+  let maxOutboxPending = 0;
+  let sampling = true;
+  const sampler = (async () => {
+    while (sampling) {
+      const texts = await scrape(opts.targets);
+      maxOutboxLagSeconds = Math.max(maxOutboxLagSeconds, maxAcross(texts, 'wagering_outbox_lag_seconds'));
+      maxOutboxPending = Math.max(maxOutboxPending, maxAcross(texts, 'wagering_outbox_pending_messages'));
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  })();
   let next = 0;
 
   const virtualUser = async (wallet: { id: string; playerId: string }) => {
@@ -107,6 +148,20 @@ async function runScenario(scenario: 'distributed' | 'hot', opts: Options): Prom
   const started = performance.now();
   await Promise.all(wallets.map(virtualUser));
   const elapsed = (performance.now() - started) / 1000;
+  sampling = false;
+  await sampler;
+
+  const after = await scrape(opts.targets);
+  const delta = (name: string) => sumAcross(after, name) - sumAcross(before, name);
+
+  // Drain: until every replica reports an empty outbox (bounded)
+  const drainStart = performance.now();
+  for (let i = 0; i < 120; i++) {
+    const texts = await scrape(opts.targets);
+    if (maxAcross(texts, 'wagering_outbox_pending_messages') === 0) break;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  const drainSeconds = (performance.now() - drainStart) / 1000;
 
   latencies.sort((a, b) => a - b);
   return {
@@ -118,19 +173,28 @@ async function runScenario(scenario: 'distributed' | 'hot', opts: Options): Prom
     p99: percentile(latencies, 99),
     max: latencies[latencies.length - 1] ?? 0,
     errors,
+    lockConflicts: delta('wagering_optimistic_lock_conflicts_total'),
+    retries: delta('wagering_retry_attempts_total'),
+    maxOutboxLagSeconds,
+    maxOutboxPending,
+    drainSeconds,
   };
 }
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   console.log(`targets=${opts.targets.join(',')} vus=${opts.vus} seconds=${opts.seconds}\n`);
-  console.log('| Cenário | Requisições | req/s | p50 (ms) | p95 (ms) | p99 (ms) | máx (ms) | Erros |');
-  console.log('|---|---:|---:|---:|---:|---:|---:|---|');
+  console.log(
+    '| Cenário | Requisições | req/s | p50 (ms) | p95 (ms) | p99 (ms) | máx (ms) | Taxa de erro | Erros | Conflitos de lock | Retries | Outbox lag máx (s) | Outbox pendente máx | Drenagem (s) |',
+  );
+  console.log('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|');
   for (const scenario of opts.scenarios) {
     const r = await runScenario(scenario, opts);
+    const errorCount = Object.values(r.errors).reduce((a, b) => a + b, 0);
+    const errorRate = r.requests > 0 ? ((errorCount / r.requests) * 100).toFixed(2) + '%' : '-';
     const errors = Object.entries(r.errors).map(([k, v]) => `${k}: ${v}`).join(', ') || '0';
     console.log(
-      `| ${r.scenario} | ${r.requests} | ${r.rps.toFixed(1)} | ${r.p50.toFixed(0)} | ${r.p95.toFixed(0)} | ${r.p99.toFixed(0)} | ${r.max.toFixed(0)} | ${errors} |`,
+      `| ${r.scenario} | ${r.requests} | ${r.rps.toFixed(1)} | ${r.p50.toFixed(0)} | ${r.p95.toFixed(0)} | ${r.p99.toFixed(0)} | ${r.max.toFixed(0)} | ${errorRate} | ${errors} | ${r.lockConflicts} | ${r.retries} | ${r.maxOutboxLagSeconds.toFixed(2)} | ${r.maxOutboxPending} | ${r.drainSeconds.toFixed(1)} |`,
     );
   }
 }

@@ -62,7 +62,8 @@ services:
       - ./infra/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
       - localstack_data:/var/lib/localstack
     healthcheck:
-      test: ["CMD", "awslocal", "sqs", "list-queues"]
+      # Healthy only after the init script created the last queue (apps start polling right away)
+      test: ["CMD", "awslocal", "sqs", "get-queue-url", "--queue-name", "wagering-events.fifo"]
       interval: 5s
       timeout: 3s
       retries: 10
