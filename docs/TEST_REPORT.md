@@ -24,51 +24,55 @@
 
 ## 1. Suítes automatizadas
 
-Comandos: `bun run typecheck` (0 erros), `bun run test:unit`, `bun run test:int`, `bun run test:e2e`, `bun run test:load`. Por suíte: unitários 116, integração 98, concorrência 6, carga 4. A suíte inteira num único processo (`bun run test`) também passa: 224 testes em 33 arquivos, ~28 s. Tempos de uma execução isolada por arquivo.
+Comandos: `bun run typecheck` (0 erros), `bun run test:unit`, `bun run test:int`, `bun run test:e2e`, `bun run test:load`. Por suíte: unitários 128, integração 106, concorrência 6, carga 4. A suíte inteira num único processo também passa, tanto com `bun run test` quanto com `bun test` puro (sem `--timeout`): 244 testes em 35 arquivos, ~33 s. Tempos de uma execução isolada por arquivo.
 
 > **Pré-condição** com a stack completa no ar: `docker compose stop app-1 app-2 app-3` antes das suítes. Os consumers das réplicas disputariam as mensagens SQS usadas pelos testes.
 
 | Suíte | Arquivo | Testes | Sucesso | Falhas | Duração |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| Cenário §8, 50 idênticas, reversões concorrentes, wallets distintas | `src/test/concurrency/concurrent-bets.spec.ts` | 5 | 5 | 0 | 966.00ms |
-| 3 processos na mesma wallet | `src/test/concurrency/multiprocess-concurrency.spec.ts` | 1 | 1 | 0 | 2.21s |
-| Inicialização do AppModule completo | `src/test/integration/bootstrap.spec.ts` | 1 | 1 | 0 | 955.00ms |
-| Inbox: duas réplicas, mesma mensagem | `src/test/integration/consumer-inbox-dedup.spec.ts` | 1 | 1 | 0 | 1078.00ms |
-| PostgreSQL indisponível → 503 | `src/test/integration/database-unavailable.spec.ts` | 2 | 2 | 0 | 512.00ms |
-| Contrato HTTP, cadeias fora de ordem, inbox em espera, guardas do schema | `src/test/integration/delivery-hardening.spec.ts` | 18 | 18 | 0 | 1.67s |
-| Redrive seletivo da DLQ | `src/test/integration/dlq-redrive.spec.ts` | 1 | 1 | 0 | 4.27s |
-| FAILED, outbox e métrica | `src/test/integration/failed-transaction.spec.ts` | 1 | 1 | 0 | 885.00ms |
-| Endpoints HTTP (Nest real) | `src/test/integration/http-endpoints.spec.ts` | 14 | 14 | 0 | 1239.00ms |
-| Validação HTTP → 400 | `src/test/integration/http-validation.spec.ts` | 8 | 8 | 0 | 825.00ms |
-| Atomicidade, crash, reinício, DLQ, 503, SIGTERM, migrations | `src/test/integration/invariants-resilience.spec.ts` | 16 | 16 | 0 | 8.12s |
-| Ordem FIFO, DLQ sem perda, ordem do outbox | `src/test/integration/messaging-ordering.spec.ts` | 5 | 5 | 0 | 1033.00ms |
-| Métricas sob tráfego | `src/test/integration/metrics-traffic.spec.ts` | 1 | 1 | 0 | 895.00ms |
-| Métricas de pendências, reconciliação e status | `src/test/integration/metrics-wiring.spec.ts` | 3 | 3 | 0 | 1133.00ms |
-| Publishers concorrentes | `src/test/integration/outbox-publisher.spec.ts` | 1 | 1 | 0 | 708.00ms |
-| Idempotência em PENDING_REFERENCE | `src/test/integration/pending-reference-idempotency.spec.ts` | 4 | 4 | 0 | 765.00ms |
-| Corrida de reversões pendentes | `src/test/integration/pending-reference-reversal-race.spec.ts` | 1 | 1 | 0 | 966.00ms |
-| Idempotência por provedor | `src/test/integration/provider-scoped-idempotency.spec.ts` | 2 | 2 | 0 | 529.00ms |
-| Reconciliação e gatilhos ledger ↔ transação | `src/test/integration/reconciliation-three-way.spec.ts` | 5 | 5 | 0 | 595.00ms |
-| Retenção de outbox e inbox | `src/test/integration/retention.spec.ts` | 2 | 2 | 0 | 401.00ms |
-| Consumer SQS (DLQ, inbox, ack) | `src/test/integration/sqs-consumer.spec.ts` | 2 | 2 | 0 | 658.00ms |
-| Casos de uso core | `src/test/integration/use-cases.spec.ts` | 8 | 8 | 0 | 916.00ms |
-| UUID em maiúsculas | `src/test/integration/uuid-case.spec.ts` | 2 | 2 | 0 | 589.00ms |
-| Carga no processo (50/100/200 apostas, 30 rodadas) | `src/test/load/load-50-bets.spec.ts` | 4 | 4 | 0 | 11.50s |
-| Hash canônico SHA-256 | `src/test/unit/canonical-hash.spec.ts` | 2 | 2 | 0 | 119.00ms |
-| Cursor/limit do ledger e contrato de POST /wallets | `src/test/unit/ledger-cursor.spec.ts` | 14 | 14 | 0 | 107.00ms |
-| Value object Money | `src/test/unit/money.spec.ts` | 15 | 15 | 0 | 112.00ms |
-| OutboxMessage: backoff, vencimento e envelope | `src/test/unit/outbox-message.spec.ts` | 3 | 3 | 0 | 118.00ms |
-| Pré-carga do ambiente de teste | `src/test/unit/preload-check.spec.ts` | 1 | 1 | 0 | 100.00ms |
-| Validação de contrato HTTP/SQS | `src/test/unit/wager-payload.validator.spec.ts` | 19 | 19 | 0 | 116.00ms |
-| Regras BET/WIN/LOSS/REFUND/ROLLBACK (código de produção) | `src/test/unit/wager-rules.spec.ts` | 37 | 37 | 0 | 120.00ms |
-| Máquina de estados WagerTransaction | `src/test/unit/wager-transaction.spec.ts` | 13 | 13 | 0 | 133.00ms |
-| Agregado Wallet e cadeia de versões | `src/test/unit/wallet.spec.ts` | 12 | 12 | 0 | 119.00ms |
-| **Total** | **33 arquivos** | **224** | **224** | **0** | |
+| Cenário §8, 50 idênticas, reversões concorrentes, wallets distintas | `src/test/concurrency/concurrent-bets.spec.ts` | 5 | 5 | 0 | 1107.00ms |
+| 3 processos na mesma wallet | `src/test/concurrency/multiprocess-concurrency.spec.ts` | 1 | 1 | 0 | 2.28s |
+| Inicialização do AppModule completo | `src/test/integration/bootstrap.spec.ts` | 1 | 1 | 0 | 903.00ms |
+| Inbox: duas réplicas, mesma mensagem | `src/test/integration/consumer-inbox-dedup.spec.ts` | 1 | 1 | 0 | 980.00ms |
+| PostgreSQL indisponível → 503 | `src/test/integration/database-unavailable.spec.ts` | 2 | 2 | 0 | 441.00ms |
+| Contrato HTTP, cadeias fora de ordem, inbox em espera, guardas do schema | `src/test/integration/delivery-hardening.spec.ts` | 18 | 18 | 0 | 1.56s |
+| Redrive seletivo da DLQ | `src/test/integration/dlq-redrive.spec.ts` | 1 | 1 | 0 | 4.32s |
+| Bordas: saldo no limite da coluna, 413/JSON, envelope de erro, WIN→BET, mensagem SQS do enunciado | `src/test/integration/evaluator-edge-cases.spec.ts` | 8 | 8 | 0 | 5.26s |
+| FAILED, outbox e métrica | `src/test/integration/failed-transaction.spec.ts` | 1 | 1 | 0 | 805.00ms |
+| Endpoints HTTP (Nest real) | `src/test/integration/http-endpoints.spec.ts` | 14 | 14 | 0 | 1053.00ms |
+| Validação HTTP → 400 | `src/test/integration/http-validation.spec.ts` | 8 | 8 | 0 | 791.00ms |
+| Atomicidade, crash, reinício, DLQ, 503, SIGTERM, migrations | `src/test/integration/invariants-resilience.spec.ts` | 16 | 16 | 0 | 7.91s |
+| Ordem FIFO, DLQ sem perda, ordem do outbox | `src/test/integration/messaging-ordering.spec.ts` | 5 | 5 | 0 | 1036.00ms |
+| Métricas sob tráfego | `src/test/integration/metrics-traffic.spec.ts` | 1 | 1 | 0 | 1051.00ms |
+| Métricas de pendências, reconciliação e status | `src/test/integration/metrics-wiring.spec.ts` | 3 | 3 | 0 | 971.00ms |
+| Publishers concorrentes | `src/test/integration/outbox-publisher.spec.ts` | 1 | 1 | 0 | 720.00ms |
+| Idempotência em PENDING_REFERENCE | `src/test/integration/pending-reference-idempotency.spec.ts` | 4 | 4 | 0 | 834.00ms |
+| Corrida de reversões pendentes | `src/test/integration/pending-reference-reversal-race.spec.ts` | 1 | 1 | 0 | 947.00ms |
+| Idempotência por provedor | `src/test/integration/provider-scoped-idempotency.spec.ts` | 2 | 2 | 0 | 614.00ms |
+| Reconciliação e gatilhos ledger ↔ transação | `src/test/integration/reconciliation-three-way.spec.ts` | 5 | 5 | 0 | 700.00ms |
+| Retenção de outbox e inbox | `src/test/integration/retention.spec.ts` | 2 | 2 | 0 | 489.00ms |
+| Consumer SQS (DLQ, inbox, ack) | `src/test/integration/sqs-consumer.spec.ts` | 2 | 2 | 0 | 761.00ms |
+| Casos de uso core | `src/test/integration/use-cases.spec.ts` | 8 | 8 | 0 | 888.00ms |
+| UUID em maiúsculas | `src/test/integration/uuid-case.spec.ts` | 2 | 2 | 0 | 557.00ms |
+| Carga no processo (50/100/200 apostas, 30 rodadas) | `src/test/load/load-50-bets.spec.ts` | 4 | 4 | 0 | 11.53s |
+| Hash canônico SHA-256 | `src/test/unit/canonical-hash.spec.ts` | 2 | 2 | 0 | 88.00ms |
+| Tipo decimal exato do ORM (sem float) | `src/test/unit/exact-decimal.type.spec.ts` | 3 | 3 | 0 | 170.00ms |
+| Cursor/limit do ledger e contrato de POST /wallets | `src/test/unit/ledger-cursor.spec.ts` | 14 | 14 | 0 | 102.00ms |
+| Value object Money | `src/test/unit/money.spec.ts` | 15 | 15 | 0 | 99.00ms |
+| OutboxMessage: backoff, vencimento e envelope | `src/test/unit/outbox-message.spec.ts` | 3 | 3 | 0 | 96.00ms |
+| Pré-carga do ambiente de teste | `src/test/unit/preload-check.spec.ts` | 1 | 1 | 0 | 83.00ms |
+| Validação de contrato HTTP/SQS | `src/test/unit/wager-payload.validator.spec.ts` | 20 | 20 | 0 | 91.00ms |
+| Regras BET/WIN/LOSS/REFUND/ROLLBACK, WIN→BET, limite de saldo | `src/test/unit/wager-rules.spec.ts` | 45 | 45 | 0 | 103.00ms |
+| Máquina de estados WagerTransaction | `src/test/unit/wager-transaction.spec.ts` | 13 | 13 | 0 | 86.00ms |
+| Agregado Wallet e cadeia de versões | `src/test/unit/wallet.spec.ts` | 12 | 12 | 0 | 95.00ms |
+| **Total** | **35 arquivos** | **244** | **244** | **0** | |
 
 Novos nesta revisão:
 - `unit/wager-rules.spec.ts` substitui `validate-reference.spec.ts`, que testava uma **cópia** da regra e não o código de produção.
 - `unit/ledger-cursor.spec.ts`.
 - `unit/outbox-message.spec.ts`.
+- `unit/exact-decimal.type.spec.ts`.
+- `integration/evaluator-edge-cases.spec.ts`, da auditoria de avaliador (`GAP_ANALYSIS.md` §2.1).
 - Casos em `unit/wallet.spec.ts`.
 - `integration/delivery-hardening.spec.ts`.
 - `integration/database-unavailable.spec.ts`.

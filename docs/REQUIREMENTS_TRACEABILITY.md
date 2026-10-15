@@ -25,7 +25,7 @@ Status: ✅ atendido e testado · ✅¹ atendido com interpretação documentada
 
 | # | Restrição | Implementação | Evidência | Status |
 |:-:|---|---|---|:-:|
-| 1 | Sem `number`/`float`/`double` para dinheiro | `Money` sobre `decimal.js`, string decimal com 2 casas; `NUMERIC(19,2)` | `unit/money.spec.ts` | ✅ |
+| 1 | Sem `number`/`float`/`double` para dinheiro | `Money` sobre `decimal.js`, string decimal com 2 casas; `NUMERIC(19,2)`; colunas mapeadas com `ExactDecimalType` (o `DecimalType` do MikroORM compara como float e pulava `UPDATE`s acima de ~9×10¹³) | `unit/money.spec.ts`, `unit/exact-decimal.type.spec.ts`, `integration/evaluator-edge-cases` | ✅ |
 | 2 | Idempotência não pode depender de cache em memória | `UNIQUE (provider_id, idempotency_key)`, `UNIQUE (provider_id, external_transaction_id)`, inbox `(consumer_name, message_id)` | `concurrency/concurrent-bets` (50 idênticas → 1 débito), `integration/consumer-inbox-dedup` | ✅ |
 | 3 | Não confiar só em SQS FIFO | Invariantes no banco; inbox persistente; consumer trata redelivery | `integration/invariants-resilience` (b) | ✅ |
 | 4 | Não publicar evento antes do commit | Transactional outbox na mesma transação; publisher lê só linhas commitadas | `integration/invariants-resilience` (c), (h) | ✅ |
@@ -53,6 +53,8 @@ Status: ✅ atendido e testado · ✅¹ atendido com interpretação documentada
 |---|---|---|:-:|
 | BET debita; rejeita sem saldo | `settle` → `INSUFFICIENT_BALANCE` | `unit/wager-rules.spec.ts` | ✅ |
 | WIN credita; LOSS não move saldo nem gera lançamento | `settle` | `unit/wager-rules.spec.ts`, `integration/use-cases` | ✅ |
+| WIN pode referenciar a BET da mesma rodada | `checkWinReference`: BET conhecida precisa ser do mesmo contexto e `PROCESSED`; vínculo gravado; BET ausente não segura o WIN | `unit/wager-rules.spec.ts`, `integration/evaluator-edge-cases` | ✅ |
+| Saldo dentro da capacidade da coluna | `settle` → `BALANCE_LIMIT_EXCEEDED` (422) em vez de estouro numérico (500) | `unit/wager-rules.spec.ts`, `integration/evaluator-edge-cases` | ✅ |
 | REFUND só de BET `PROCESSED`, uma vez | `checkReference` + `uq_wager_reference_reversal` | `unit/wager-rules.spec.ts`, `concurrency/concurrent-bets` (P0.2) | ✅ |
 | ROLLBACK inverte BET/WIN/REFUND `PROCESSED`, uma vez | `checkReference` + `settle` (direção inversa) | `unit/wager-rules.spec.ts`, `integration/invariants-resilience` (a.1–a.3) | ✅ |
 | 1. REFUND/ROLLBACK exigem referência | Validador + `MissingReferenceError` + `chk_wager_reference_required` | `unit/wager-rules.spec.ts`, `integration/http-validation` | ✅ |
@@ -84,7 +86,7 @@ Status: ✅ atendido e testado · ✅¹ atendido com interpretação documentada
 | `Idempotency-Key` obrigatório e fonte da verdade | 400 `MISSING_IDEMPOTENCY_KEY` | `integration/delivery-hardening` | ✅ |
 | `payloadHash` = SHA-256 de JSON canônico do subconjunto de negócio, documentado | `canonical-hash.ts`; `ARCHITECTURE.md` §6 | `unit/canonical-hash.spec.ts` | ✅ |
 | Replay idêntico → mesma resposta + `idempotentReplay: true`; payload diferente → conflito | — | `integration/use-cases`, `integration/pending-reference-idempotency`, `integration/delivery-hardening` | ✅ |
-| Status distinguem payload inválido, conflito, regra de negócio, aceite pendente, falha transitória — de forma consistente | 400 / 409 / 422 / 202 / 503 (+ 500 para `FAILED`); `ARCHITECTURE.md` §12 | `integration/http-endpoints`, `integration/invariants-resilience` (f.1, f.2), `integration/database-unavailable` | ✅ |
+| Status distinguem payload inválido, conflito, regra de negócio, aceite pendente, falha transitória — de forma consistente | 400 / 409 / 422 / 202 / 503 (+ 413 corpo grande, 500 para `FAILED`); envelope único `{ statusCode, error: CÓDIGO, message }` em todos os endpoints, inclusive erros do body-parser; `ARCHITECTURE.md` §11–12 | `integration/http-endpoints`, `integration/invariants-resilience` (f.1, f.2), `integration/database-unavailable`, `integration/evaluator-edge-cases` | ✅ |
 | Reconciliação sem correção silenciosa: log, métrica e sinalização | `ReconcileWalletUseCase` | `integration/metrics-wiring`, `integration/reconciliation-three-way` | ✅ |
 | `/health/live` e `/health/ready` (PostgreSQL e SQS) sem autenticação | `HealthController` | `integration/http-endpoints` | ✅ |
 
@@ -93,6 +95,7 @@ Status: ✅ atendido e testado · ✅¹ atendido com interpretação documentada
 | Exigência | Evidência | Status |
 |---|---|:-:|
 | Mesmo use case da entrada HTTP | `SqsWagerConsumer` → `ProcessWagerTransactionUseCase.execute` | ✅ |
+| Contrato da mensagem do enunciado (`type: WagerTransactionRequested`, `occurredAt`, `data`) | Mensagem exata processada; outro `type` → DLQ `INVALID_CONTRACT` (`integration/evaluator-edge-cases`) | ✅ |
 | Inbox persistente por `(consumerName, messageId)` | `integration/consumer-inbox-dedup` | ✅ |
 | Ack só após commit; redelivery sem duplicar | `integration/invariants-resilience` (b: processo morto após commit e antes do ack) | ✅ |
 | Negócio (terminal), transitório (backoff), permanente (DLQ); limite antes da DLQ | `integration/invariants-resilience` (e, e.2), `integration/messaging-ordering` | ✅ |
@@ -105,7 +108,7 @@ Status: ✅ atendido e testado · ✅¹ atendido com interpretação documentada
 | Transação, saldo, ledger, inbox e evento atômicos | `integration/invariants-resilience` (a.0) | ✅ |
 | Publishers concorrentes sem perder nem duplicar indefinidamente | `integration/outbox-publisher`, `integration/messaging-ordering` | ✅ |
 | Commit → processo morre → outra instância publica → duplicata segura (`MessageDeduplicationId = eventId`) | `integration/invariants-resilience` (c) | ✅ |
-| Eventos mínimos: `WagerTransactionProcessed` (inclusive LOSS), `Rejected`, `WalletBalanceChanged` só com mudança de saldo, `PendingReference` | `integration/invariants-resilience` (h) | ✅ |
+| Eventos mínimos: `WagerTransactionProcessed` (inclusive LOSS e OPENING), `Rejected`, `WalletBalanceChanged` só com mudança de saldo, `PendingReference` | `integration/invariants-resilience` (h), `integration/evaluator-edge-cases` | ✅ |
 | Envelope em classe abstrata com subclasse por evento; `eventType`/`version` no tipo; `data` com `MoneyProps` | `src/shared/domain/events/integration-event.ts`, `src/wagering/domain/events/` | ✅ |
 
 ## Seção 12 — Observabilidade

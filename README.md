@@ -8,7 +8,7 @@ Serviço financeiro distribuído de alta performance para processamento de trans
 
 | Componente | Tecnologia | Detalhes |
 |---|---|---|
-| **Runtime / Package Manager** | [Bun](https://bun.sh) 1.x | Execução nativa ultrarrápida e test runner |
+| **Runtime / Package Manager** | [Bun](https://bun.sh) 1.4.x | Runtime, gerenciador de pacotes e test runner (CI e imagem usam 1.4.2) |
 | **Linguagem** | TypeScript 5.x | Modo strict com tipagem rigorosa de domínio |
 | **Framework** | NestJS 11 | Arquitetura modular Ports & Adapters (Hexagonal / DDD) |
 | **Banco de Dados** | PostgreSQL 16 | ACID, CHECK constraints, índices parciais e locks |
@@ -21,7 +21,7 @@ Serviço financeiro distribuído de alta performance para processamento de trans
 
 ## ⚡ Pré-requisitos
 
-- [Bun](https://bun.sh) >= 1.0.0
+- [Bun](https://bun.sh) 1.4.x (testado com 1.4.2; o `bun.lock` em formato texto exige Bun ≥ 1.2)
 - [Docker](https://www.docker.com/) e Docker Compose
 
 ---
@@ -32,6 +32,7 @@ Serviço financeiro distribuído de alta performance para processamento de trans
 
 ```bash
 bun install
+cp .env.example .env   # opcional: os valores padrão já apontam para o docker-compose
 ```
 
 ### 2. Subir Infraestrutura (PostgreSQL + LocalStack)
@@ -54,7 +55,7 @@ bun run migration:up
 bun run dev
 ```
 
-A API estará disponível em `http://localhost:3000`.
+A API estará disponível em `http://localhost:3000` (os exemplos abaixo usam essa porta; com a stack em containers, use `3011`, `3012` ou `3013`).
 
 ### 5. Stack Completa em Containers (3 réplicas)
 
@@ -76,13 +77,13 @@ Os testes rodam contra PostgreSQL e LocalStack reais (pré-requisito: passos 2 e
 # Checagem de tipos (código de produção, testes e scripts)
 bun run typecheck
 
-# Todos os testes (224)
+# Todos os testes (244) — `bun test` puro também funciona (timeout padrão ajustado no preload)
 bun run test
 
-# Unitários (116): Money, Wallet, WagerTransaction, regras BET/WIN/LOSS/REFUND/ROLLBACK, hash canônico, contratos
+# Unitários (128): Money, Wallet, WagerTransaction, regras BET/WIN/LOSS/REFUND/ROLLBACK, hash canônico, contratos, tipo decimal exato
 bun run test:unit
 
-# Integração (98): atomicidade, idempotência, reversões, reconciliação, guardas do schema, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP
+# Integração (106): atomicidade, idempotência, reversões, reconciliação, guardas do schema, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP, casos de borda
 bun run test:int
 
 # Concorrência (6): 3 processos disputando a mesma wallet, 50 requisições paralelas
@@ -180,7 +181,9 @@ curl -X POST http://localhost:3000/wagering/transactions \
 }
 ```
 
-Status por resultado: `200` aplicada · `202` aguardando referência (`PENDING_REFERENCE`) · `400` contrato/header · `404` wallet inexistente · `409` conflito de idempotência · `422` rejeitada por regra · `500` `FAILED` · `503` + `Retry-After` falha transitória (reenviar com a mesma chave). Replays repetem o status original com `idempotentReplay: true`. Códigos de falha e ação esperada do provedor: `ARCHITECTURE.md`, seções 11 e 12.
+Status por resultado: `200` aplicada · `202` aguardando referência (`PENDING_REFERENCE`) · `400` contrato/header · `404` wallet inexistente · `409` conflito de idempotência · `413` corpo grande demais · `422` rejeitada por regra · `500` `FAILED` · `503` + `Retry-After` falha transitória (reenviar com a mesma chave). Replays repetem o status original com `idempotentReplay: true`. Todo erro tem o mesmo envelope `{ statusCode, error, message }`, com `error` em código de máquina (ex.: `MISSING_IDEMPOTENCY_KEY`, `WALLET_NOT_FOUND`, `IDEMPOTENCY_CONFLICT`). Códigos de falha e ação esperada do provedor: `ARCHITECTURE.md`, seções 11 e 12.
+
+Contrato de entrada: `playerId` e `walletId` são UUIDs; `money.amount` é string com exatamente 2 casas (`"25.00"`), até `99999999999999999.99`; `providerId` `system` é reservado às transações internas. Um WIN pode informar `referenceExternalTransactionId` da BET da mesma rodada: se a BET existir, ela precisa ser do mesmo jogador, wallet e rodada (senão 422); se ainda não chegou, o WIN é creditado mesmo assim.
 
 ### Consultar Transação
 ```bash
@@ -241,7 +244,7 @@ curl http://localhost:3000/metrics        # Prometheus
 ```
 
 ### 7. Fila SQS
-Mensagens em `wager-transactions.fifo` usam o envelope do enunciado (`messageId`, `type`, `occurredAt`, `data` com `idempotencyKey`; `correlationId` opcional) e passam pelo **mesmo caso de uso** da API. Deduplicação persistente por `(consumerName, messageId)` na tabela `inbox_messages`, ack só após o commit, DLQ `wager-transactions-dlq.fifo` com o motivo em `FailureReason`.
+Mensagens em `wager-transactions.fifo` usam o envelope do enunciado (`messageId`, `type: "WagerTransactionRequested"`, `occurredAt` ISO-8601, `data` com `idempotencyKey`; `correlationId` opcional; outro `type` vai para a DLQ como `INVALID_CONTRACT`) e passam pelo **mesmo caso de uso** da API. Deduplicação persistente por `(consumerName, messageId)` na tabela `inbox_messages`, ack só após o commit, DLQ `wager-transactions-dlq.fifo` com o motivo em `FailureReason`.
 
 ---
 

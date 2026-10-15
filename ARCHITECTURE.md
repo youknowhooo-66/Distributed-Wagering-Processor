@@ -108,6 +108,8 @@ A unidade de concorrência é a **Wallet (`walletId`)**. Decisão e medições e
 - **Zero uso de `number`, `float` ou `double`:** Toda aritmética utiliza a biblioteca `decimal.js` com escala fixa de 2 casas decimais.
 - **Imutabilidade Estrutural:** Todas as operações aritméticas (`add`, `subtract`, `negate`) retornam uma **nova instância** de `Money`.
 - **Persistência Exata:** No PostgreSQL, valores são armazenados como `NUMERIC(19,2)`, impedindo qualquer perda de precisão ou erro de arredondamento.
+- **Mapeamento sem float no ORM:** as colunas de dinheiro usam `ExactDecimalType` (`src/shared/infrastructure/database/exact-decimal.type.ts`), e não o `DecimalType` do MikroORM. O tipo padrão decide se um valor mudou convertendo os dois lados para `number`. Acima de ~9×10¹³, valores diferentes viram o mesmo float (`99999999999999994.00` e `99999999999999999.00`), e o `UPDATE` do saldo é pulado em silêncio. O tipo exato normaliza com `decimal.js` na escala da coluna e compara strings. O teste `exact-decimal.type.spec.ts` documenta o comportamento do tipo padrão, e `evaluator-edge-cases.spec.ts` mostra a atualização correta.
+- **Limite de saldo:** a capacidade da coluna (`99999999999999999.99`) é regra de domínio (`Wallet.MAX_BALANCE_AMOUNT`). Um crédito que a ultrapassaria é `REJECTED` com `BALANCE_LIMIT_EXCEEDED` (422), e não um estouro numérico no banco (500).
 - **Moeda ISO-4217:** Validação estrita por regex `^[A-Z]{3}$`. Operações entre moedas distintas lançam `CurrencyMismatchError`.
 
 ### Reconciliação em Três Vias (`POST /wallets/:id/reconciliation`)
@@ -156,6 +158,9 @@ HTTP e SQS usam o mesmo validador (`src/wagering/application/wager-payload.valid
 
 Os demais endpoints também validam a borda: `POST /wallets` (playerId UUID, `initialBalance` com 2 casas e moeda ISO) → `400 INVALID_PAYLOAD`; identificadores de rota que não são UUID → `400 INVALID_ID`; `limit` fora de 1–200 → `400 INVALID_LIMIT`; cursor adulterado → `400 INVALID_CURSOR`. Nenhum valor fora do contrato chega ao PostgreSQL para virar 500.
 
+### Namespace interno
+`providerId = "system"` é reservado às transações internas (OPENING) e recusado na entrada (400). Assim nenhum provedor colide com as chaves `internal:opening:<walletId>` nem com os IDs externos `opening-<walletId>`.
+
 ### Titularidade da wallet
 A wallet precisa pertencer ao `playerId` informado pelo provedor e estar na moeda da operação. Caso contrário a transação é `REJECTED` com `WALLET_PLAYER_MISMATCH` ou `CURRENCY_MISMATCH` (422, auditável, sem movimentar saldo). Sem isso, um provedor poderia debitar a wallet de outro jogador só conhecendo o `walletId`.
 
@@ -171,6 +176,7 @@ Garantia de que eventos de integração **nunca são perdidos, nunca são public
 4. Para cada grupo, tenta `pg_try_advisory_xact_lock(hashtextextended('outbox:' || grupo, 0))`. Se outro publisher detém o grupo, o grupo é pulado nesse ciclo; assim cada wallet é publicada por **um publisher por vez**, com várias instâncias em paralelo em grupos diferentes.
 5. As mensagens do grupo são publicadas em ordem `(occurred_at, id)` e a publicação **para na primeira mensagem em backoff ou com falha**: um evento posterior nunca ultrapassa um anterior. Grupos diferentes (até 8) são publicados em paralelo, e o publisher repete o ciclo imediatamente enquanto houver trabalho (espera 1 s só quando o outbox está vazio).
 6. Somente após a confirmação do envio ao SQS a mensagem é marcada com `published_at`.
+   - Eventos por resultado: transação aplicada → `WagerTransactionProcessed` (inclusive LOSS e a OPENING interna) + `WalletBalanceChanged` quando o saldo muda; rejeitada → `WagerTransactionRejected`; aguardando referência → `WagerTransactionPendingReference`; falha permanente → `WagerTransactionFailed`.
 7. Falha temporária do SQS agenda nova tentativa com **backoff exponencial** (`2s`, `4s`, `8s`... até `60s`).
 
 ---
@@ -185,7 +191,7 @@ Garantia de que eventos de integração **nunca são perdidos, nunca são public
 
 | Erro | Destino |
 |---|---|
-| JSON inválido, contrato inválido | DLQ imediata (`MALFORMED_JSON`, `INVALID_CONTRACT`) |
+| JSON inválido, contrato inválido (inclui `type` diferente de `WagerTransactionRequested` e `occurredAt` fora de ISO-8601) | DLQ imediata (`MALFORMED_JSON`, `INVALID_CONTRACT`) |
 | Erro de domínio, HTTP 4xx (wallet inexistente, colisão de ID externo, conflito de idempotência) | DLQ imediata (`<código>` ou `HTTP_<status>`) |
 | Erro transitório | backoff `min(5 × 2^receiveCount, 300)`s; DLQ + `FAILED` ao atingir 5 recebimentos |
 | Contenção de lock / 503 | mesmo backoff; DLQ + `FAILED` ao atingir 10 recebimentos |
@@ -205,6 +211,13 @@ Quando uma operação de reversão (`REFUND` ou `ROLLBACK`) é entregue antes da
 3. O worker agendado `PendingReferenceWorker` reprocessa transações pendentes utilizando **backoff exponencial** (`min(1s * 2^retry, 300s)`). Cada pendência é resolvida **na própria transação**: o worker trava a wallet primeiro, relê a pendência (se outra instância já a resolveu, segue adiante) e reaplica o payload persistido. Uma falha em uma pendência não desfaz as demais.
 4. **Cadeias fora de ordem:** se a referência **existe mas ela mesma aguarda** (`PENDING_REFERENCE`), a reversão continua aguardando em vez de ser rejeitada. Exemplo: `ROLLBACK(REFUND)` → `REFUND(BET)` → `BET` chegando nessa ordem terminam os três `PROCESSED`. Divergências de contexto (provedor, jogador, wallet, rodada, moeda, valor, tipo) são rejeitadas na hora, mesmo com a referência aguardando, porque nunca vão se tornar válidas. Referência terminal `REJECTED`/`FAILED` → `REFERENCE_NOT_PROCESSED`.
 5. **TTL / Limite:** Após 10 tentativas sem que a referência surja (≈ 20 minutos com o backoff acima), a transação transiciona para **`REJECTED`** com o código **`REFERENCE_TIMEOUT`**, emitindo o evento `WagerTransactionRejected`. O limite equilibra provedores que reenviam a aposta original com atraso de minutos e o custo de manter pendências abertas.
+
+### WIN com referência à BET
+O enunciado permite que um WIN referencie a BET da mesma rodada. Quando o WIN traz `referenceExternalTransactionId` e a BET já existe, ela precisa:
+- ser uma BET `PROCESSED`;
+- ser do mesmo provedor, jogador, wallet, rodada e moeda (o valor difere por natureza).
+
+Se a BET existe e não atende a isso, o WIN é rejeitado (`CROSS_*`, `INVALID_REFERENCE_KIND`, `REFERENCE_NOT_PROCESSED`). Se atende, o vínculo é gravado em `reference_transaction_id`. Se a BET ainda não chegou, o WIN **não espera**: o crédito do jogador não fica refém de uma entrega atrasada da aposta, e a referência externa permanece registrada.
 
 ### Interpretação adotada: uma reversão por referência
 O enunciado diz que "uma referência não pode ser revertida duas vezes pelo mesmo tipo de operação". A implementação é mais estrita: uma transação só pode ter **uma** reversão `PROCESSED`, de qualquer tipo (`uq_wager_reference_reversal` em `reference_transaction_id`). Motivo: `REFUND(BET)` seguido de `ROLLBACK(BET)` devolveria o mesmo valor duas vezes. Desfazer um REFUND continua possível referenciando o próprio REFUND (`ROLLBACK(REFUND)`). Detalhes no [ADR-003](docs/adr/003-reversal-unique-index-semantics.md).
@@ -245,6 +258,7 @@ Toda rejeição grava um `failureCode` estável (`src/shared/domain/errors/failu
 |---|---|---|---|
 | `INSUFFICIENT_BALANCE` | `422` `REJECTED` | BET maior que o saldo | Desistir (ou nova aposta com outro valor e outra chave) |
 | `REVERSAL_INSUFFICIENT_BALANCE` | `422` `REJECTED` | ROLLBACK de WIN/REFUND deixaria saldo negativo (distinto de aposta sem saldo, regra 9) | Escalar para operação; não reenviar |
+| `BALANCE_LIMIT_EXCEEDED` | `422` `REJECTED` | O crédito levaria o saldo além de `99999999999999999.99` (capacidade de `NUMERIC(19,2)`) | Escalar para operação |
 | `CURRENCY_MISMATCH` | `422` `REJECTED` | Moeda diferente da wallet ou da referência | Corrigir payload, nova chave |
 | `WALLET_PLAYER_MISMATCH` | `422` `REJECTED` | A wallet não pertence ao `playerId` informado | Corrigir payload, nova chave |
 | `CROSS_PROVIDER_REFERENCE` / `CROSS_PLAYER_REFERENCE` / `CROSS_WALLET_REFERENCE` / `CROSS_ROUND_REFERENCE` | `422` `REJECTED` | Referência de outro provedor, jogador, wallet ou rodada | Corrigir referência, nova chave |
@@ -255,7 +269,18 @@ Toda rejeição grava um `failureCode` estável (`src/shared/domain/errors/failu
 | `REFERENCE_TIMEOUT` | `REJECTED` (evento) | Referência não chegou em 10 tentativas do worker | Enviar a referência e a reversão de novo, com nova chave |
 | `PERMANENT_PROCESSING_ERROR` | `500` `FAILED` | Erro não recuperável no consumer (tentativas esgotadas); mensagem na DLQ | Escalar para operação; o reenvio com a mesma chave devolve o mesmo `FAILED` |
 
-Erros de contrato e de transporte não viram transação (nada é gravado) e têm código próprio no corpo: `INVALID_PAYLOAD`, `MISSING_IDEMPOTENCY_KEY`, `INVALID_IDEMPOTENCY_KEY`, `INVALID_ID`, `INVALID_LIMIT`, `INVALID_CURSOR` (400); `IDEMPOTENCY_CONFLICT`, `WALLET_ALREADY_EXISTS`, colisão de `(providerId, externalTransactionId)` sob outra chave (409); `CONCURRENCY_LIMIT_EXCEEDED`, `SERVICE_UNAVAILABLE` (503).
+Erros de contrato e de transporte não viram transação (nada é gravado). Têm o mesmo envelope `{ statusCode, error, message }`, com `error` em código de máquina:
+
+| Status | Códigos |
+|---|---|
+| `400` | `INVALID_PAYLOAD`, `INVALID_JSON`, `MISSING_IDEMPOTENCY_KEY`, `INVALID_IDEMPOTENCY_KEY`, `INVALID_ID`, `INVALID_LIMIT`, `INVALID_CURSOR` |
+| `404` | `WALLET_NOT_FOUND`, `TRANSACTION_NOT_FOUND`, `NOT_FOUND` (rota inexistente) |
+| `409` | `IDEMPOTENCY_CONFLICT`, `EXTERNAL_TRANSACTION_CONFLICT`, `WALLET_ALREADY_EXISTS` |
+| `413` / `415` | `PAYLOAD_TOO_LARGE`, `UNSUPPORTED_MEDIA_TYPE` |
+| `503` | `CONCURRENCY_LIMIT_EXCEEDED`, `SERVICE_UNAVAILABLE` |
+| `500` | `INTERNAL_ERROR` (sem detalhes internos; logado com o `correlationId`) |
+
+O filtro global (`DomainExceptionFilter`) garante o envelope também para erros levantados antes do Nest (body-parser: JSON malformado, corpo acima de 100 kb).
 
 ---
 
@@ -268,7 +293,8 @@ Mesmo critério em todos os endpoints: o status diz ao provedor se ele pode reen
 | Transação aplicada | `200 OK` | `status: "PROCESSED"`, `balance` após a operação | — |
 | Wallet criada | `201 Created` | saldo inicial, `version: 1` | — |
 | Aceita, aguardando referência | `202 Accepted` | `status: "PENDING_REFERENCE"` | Pode reenviar (replay) |
-| Payload ou header inválido | `400 Bad Request` | `INVALID_PAYLOAD`, `MISSING_IDEMPOTENCY_KEY`, `INVALID_IDEMPOTENCY_KEY`, `INVALID_ID`, `INVALID_LIMIT`, `INVALID_CURSOR` | Só depois de corrigir |
+| Payload ou header inválido | `400 Bad Request` | `INVALID_PAYLOAD`, `INVALID_JSON`, `MISSING_IDEMPOTENCY_KEY`, `INVALID_IDEMPOTENCY_KEY`, `INVALID_ID`, `INVALID_LIMIT`, `INVALID_CURSOR` | Só depois de corrigir |
+| Corpo grande demais | `413 Payload Too Large` | `PAYLOAD_TOO_LARGE` (limite de 100 kb) | Só depois de corrigir |
 | Wallet ou transação inexistente | `404 Not Found` | — | Não |
 | Conflito | `409 Conflict` | `IDEMPOTENCY_CONFLICT` (mesma chave, payload diferente); `(providerId, externalTransactionId)` já usado com outra chave; `WALLET_ALREADY_EXISTS` | Não (com outra chave, se for nova operação) |
 | Regra de negócio violada | `422 Unprocessable Entity` | `status: "REJECTED"` + `failureCode` (seção 11); terminal | Não |
@@ -364,5 +390,6 @@ Para manter a clareza e o alinhamento com os limites de um desafio técnico foca
 2. **SAGA / Compensação Distribuída Trans-Provedor:** O ciclo atual suporta reversões locais atômicas (`ROLLBACK` e `REFUND`). Em cenários onde um provedor terceiro requer compensações distribuídas em duas fases (2PC/SAGA orchestration) entre diferentes plataformas de jogos, orquestradores de fluxo (ex: Temporal ou Camunda) seriam recomendados.
 3. **Distributed Tracing (W3C TraceContext):** Embora os logs estruturados via Pino incluam `correlationId` em cada requisição e evento da outbox, a propagação completa de spans OpenTelemetry com Jaeger/OTel Collector não foi incorporada para evitar dependências adicionais desnecessárias nesta fase.
 4. **Uma movimentação por wallet por transação SQL:** os gatilhos de pareamento saldo ↔ ledger exigem que cada transação SQL mova o saldo de uma wallet no máximo uma vez (o lançamento precisa ser o estado final da wallet no commit). É o desenho atual de todos os fluxos; operações em lote na mesma wallet precisariam de uma transação por movimentação.
-5. **Escritas privilegiadas:** um superusuário pode desligar gatilhos (`session_replication_role = replica`). Por isso a reconciliação continua existindo e alertando (`ReconciliationDiscrepancy`).
-6. **Reversão parcial e multi-moeda:** reversões exigem o valor exato da referência (parcial fora de escopo, como no enunciado). O modelo é multi-moeda (uma wallet por `playerId + currency`), mas os testes de carga usam só `BRL`.
+5. **Teto de saldo:** `99999999999999999.99` por wallet (capacidade de `NUMERIC(19,2)`), aplicado como regra de domínio (`BALANCE_LIMIT_EXCEEDED`).
+6. **Escritas privilegiadas:** um superusuário pode desligar gatilhos (`session_replication_role = replica`). Por isso a reconciliação continua existindo e alertando (`ReconciliationDiscrepancy`).
+7. **Reversão parcial e multi-moeda:** reversões exigem o valor exato da referência (parcial fora de escopo, como no enunciado). O modelo é multi-moeda (uma wallet por `playerId + currency`), mas os testes de carga usam só `BRL`.

@@ -1,18 +1,18 @@
 {
-  "timestamp": "2026-10-15T05:55:00.000Z",
+  "timestamp": "2026-10-15T06:40:00.000Z",
   "environment": "validation workspace: Linux x86_64 2 vCPU, Bun 1.4.2, PostgreSQL 16.15, SQS emulator (LocalStack image unavailable); regenerate with scripts/collect-evidence.ts against docker compose",
   "suites": {
     "unit": {
-      "pass": 116,
+      "pass": 128,
       "fail": 0,
-      "tests": 116,
-      "files": 9
+      "tests": 128,
+      "files": 10
     },
     "integration": {
-      "pass": 98,
+      "pass": 106,
       "fail": 0,
-      "tests": 98,
-      "files": 21
+      "tests": 106,
+      "files": 22
     },
     "concurrency_e2e": {
       "pass": 6,
@@ -28,9 +28,9 @@
     }
   },
   "total": {
-    "pass": 224,
+    "pass": 244,
     "fail": 0,
-    "tests": 224,
-    "files": 33
+    "tests": 244,
+    "files": 35
   }
 }

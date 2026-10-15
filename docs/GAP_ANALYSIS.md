@@ -6,10 +6,10 @@
 
 ## Veredito
 
-Todos os gaps abertos em 11/10 estão fechados. A revisão de 15/10 encontrou e fechou mais nove (N01–N09). Nenhuma falha eliminatória da seção 14 ocorre, e cada exigência tem implementação e teste em `docs/REQUIREMENTS_TRACEABILITY.md`.
+Todos os gaps abertos em 11/10 estão fechados. A revisão de 15/10 encontrou e fechou mais dezoito (N01–N18), nove deles numa auditoria simulando o avaliador (seção 2.1). Nenhuma falha eliminatória da seção 14 ocorre, e cada exigência tem implementação e teste em `docs/REQUIREMENTS_TRACEABILITY.md`.
 
 Resultado da execução de 15/10:
-- 224 testes passando;
+- 244 testes passando, também com `bun test` puro;
 - typecheck limpo;
 - build de produção com 3 instâncias validado.
 
@@ -74,11 +74,34 @@ Pendências que não são de código (seção 4): rodar o CI e `scripts/collect-
 | N08 | Eventos sempre com `correlationId = transactionId`; sem `causationId` | `correlationId` do chamador; `causationId` = `messageId` da fila | `integration/delivery-hardening` |
 | N09 | Taxonomia documentada com códigos inexistentes (`EXTERNAL_TRANSACTION_EXISTS`) e sem `REVERSAL_INSUFFICIENT_BALANCE` | Tabela refeita com a ação esperada do provedor (`ARCHITECTURE.md` §11) | — |
 
+## 2.1 Auditoria de avaliador (15/10, segunda rodada)
+
+Simulação do que a banca testaria além da suíte, com a aplicação compilada em modo de produção:
+- `bun test` puro;
+- JSON malformado e corpo grande;
+- valores no limite da coluna;
+- a mensagem SQS exata do enunciado;
+- WIN com referência;
+- namespace interno.
+
+| # | Achado | Correção | Teste |
+|---|---|---|---|
+| N10 | **O MikroORM compara colunas `decimal` como float.** Acima de ~9×10¹³, um saldo novo diferente do anterior era tratado como "inalterado" e o `UPDATE` era pulado. O gatilho de pareamento (N02) barrava o commit (500) em vez de deixar divergir. | `ExactDecimalType` em todas as colunas de dinheiro (comparação exata com `decimal.js`) | `unit/exact-decimal.type.spec.ts`, `integration/evaluator-edge-cases` |
+| N11 | Crédito além de `NUMERIC(19,2)` estourava no banco (500) | `BALANCE_LIMIT_EXCEEDED` (422) como regra de domínio | `unit/wager-rules.spec.ts`, `integration/evaluator-edge-cases` |
+| N12 | `bun test` sem `--timeout` falhava no teste de carga (timeout padrão de 5 s) | `setDefaultTimeout(120_000)` no preload | Execução de `bun test`: 244/244 |
+| N13 | Corpo acima de 100 kb → 500; erros de 404/409 com texto livre em vez de código | Filtro global com envelope único `{ statusCode, error: CÓDIGO, message }`; erros do body-parser → 413/400 | `integration/evaluator-edge-cases` |
+| N14 | Mensagem SQS com `type` diferente de `WagerTransactionRequested` era processada como aposta | `type` e `occurredAt` (ISO-8601) validados → DLQ `INVALID_CONTRACT` | `integration/evaluator-edge-cases` |
+| N15 | WIN com `referenceExternalTransactionId` não era validado (aceitava BET de outra rodada) | `checkWinReference`; vínculo gravado em `reference_transaction_id` | `unit/wager-rules.spec.ts`, `integration/evaluator-edge-cases` |
+| N16 | `providerId: "system"` (namespace da OPENING) aceito na entrada | Reservado → 400 | `unit/wager-payload.validator.spec.ts`, `integration/evaluator-edge-cases` |
+| N17 | OPENING não emitia `WagerTransactionProcessed` ("qualquer transação aplicada") | Evento emitido junto com `WalletBalanceChanged` | `integration/evaluator-edge-cases` |
+| N18 | O MANUAL citava um `.env.example` inexistente; a versão mínima do Bun estava errada (o `bun.lock` exige ≥ 1.2) | `.env.example` com todas as variáveis; Bun 1.4.x documentado | — |
+
 ## 3. Interpretações adotadas (documentadas)
 
 - **Uma reversão por referência, de qualquer tipo** (ADR-003): mais estrito que "duas vezes pelo mesmo tipo".
 - **`FAILED` responde 500 em replay**: é terminal e não deve ser reenviado; 503 fica reservado ao que pode ser retentado.
 - **Uma movimentação por wallet por transação SQL**: exigida pelos gatilhos de pareamento; é o desenho de todos os fluxos.
+- **WIN não espera a BET**: se a BET referenciada ainda não chegou, o WIN é creditado e a referência fica registrada. Se a BET existe, precisa ser do mesmo contexto.
 - **Timeout de referência**: 10 tentativas (≈ 20 min). Justificativa em `ARCHITECTURE.md` §9.
 
 ## 4. Pendências fora do código

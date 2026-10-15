@@ -128,3 +128,15 @@ Revisão contra o enunciado com a suíte executada (detalhes e motivos em `docs/
 - **Operação:** healthcheck do LocalStack espera as filas; `load:http` mede conflitos, retries, outbox lag e drenagem.
 - **Documentação:** rastreabilidade refeita contra o enunciado; `ARCHITECTURE.md` único (a cópia em `docs/` e o `AUDIT_REPORT.md` desatualizados foram removidos); taxonomia de falhas com a ação esperada do provedor.
 
+### Auditoria de avaliador (15/10, segunda rodada)
+
+Simulação do que a banca testaria além da suíte (detalhes em `docs/GAP_ANALYSIS.md` §2.1):
+- **Dinheiro no ORM:** as colunas de dinheiro passaram a usar `ExactDecimalType`. O `DecimalType` do MikroORM compara como float e pulava `UPDATE`s de saldo acima de ~9×10¹³.
+- **Limite da coluna:** crédito além de `NUMERIC(19,2)` vira `BALANCE_LIMIT_EXCEEDED` (422) em vez de 500.
+- **Erros HTTP:** envelope único `{ statusCode, error: CÓDIGO, message }` em todos os endpoints. Corpo grande → 413; JSON malformado → 400.
+- **Contrato da fila:** `type` (`WagerTransactionRequested`) e `occurredAt` validados.
+- **WIN → BET:** referência validada quando a BET existe; o vínculo é gravado.
+- **Namespace e eventos:** `providerId: "system"` reservado; OPENING emite `WagerTransactionProcessed`.
+- **Testes:** `bun test` puro funciona (timeout padrão no preload).
+- **Setup:** `.env.example` criado; versão do Bun documentada.
+

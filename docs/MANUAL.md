@@ -8,7 +8,7 @@ O **Distributed Wagering Processor** é um motor transacional financeiro de alta
 
 ### 1.1 Pré-requisitos
 - Docker & Docker Compose
-- Bun `>= 1.1.0`
+- Bun `1.4.x` (testado com 1.4.2)
 
 ### 1.2 Comandos Essenciais
 ```bash
@@ -18,11 +18,11 @@ docker compose up -d --wait postgres localstack
 # 2. Executar migrações do banco
 bun run migration:up
 
-# 3. Executar suíte completa de testes (224 testes: 116 unit + 98 integração + 6 concorrência + 4 carga)
+# 3. Executar suíte completa de testes (244 testes: 128 unit + 106 integração + 6 concorrência + 4 carga)
 # Os scripts de teste definem ENABLE_BACKGROUND_POLL=false automaticamente
 bun run typecheck    # tipos de produção, testes e scripts
-bun run test:unit    # 116 testes — domínio puro (regras da seção 7) e contratos, sem I/O
-bun run test:int     # 98 testes — PostgreSQL + LocalStack SQS reais
+bun run test:unit    # 128 testes — domínio puro (regras da seção 7) e contratos, sem I/O
+bun run test:int     # 106 testes — PostgreSQL + LocalStack SQS reais
 bun run test:e2e     # 6 testes  — paralelismo real multi-processo
 bun run test:load    # 4 testes  — 50 BETs concorrentes, invariantes de saldo
 

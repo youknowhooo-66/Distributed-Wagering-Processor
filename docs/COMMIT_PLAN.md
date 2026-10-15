@@ -52,3 +52,13 @@ Commits locais na mesma branch, sobre `e590d35`, sem push (o push e o merge são
 | 6 | `chore(ops): load test reports conflicts and outbox lag; LocalStack healthcheck waits for queues` | `scripts/load-http.ts`, `docker-compose.yml` |
 | 7 | `docs: delivery review` | `README.md`, `ARCHITECTURE.md`, `docs/` |
 
+### Auditoria de avaliador (mesma data)
+
+| # | Mensagem | Conteúdo |
+| :-: | :--- | :--- |
+| 8 | `fix(persistence): exact decimal comparison for money columns` | `ExactDecimalType` e mapeamentos |
+| 9 | `fix(domain): balance limit, WIN to BET reference, reserved internal provider, OPENING event` | Regras, caso de uso, validador, abertura de wallet |
+| 10 | `fix(http): uniform error envelope and SQS message contract` | Filtro global, códigos 404/409, consumer |
+| 11 | `test: evaluator edge cases; plain bun test` | `integration/evaluator-edge-cases.spec.ts`, preload |
+| 12 | `docs: evaluator audit` | Documentação, `.env.example` |
+

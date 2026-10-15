@@ -10,12 +10,12 @@ A evidência com LocalStack e Docker Compose é regenerada por `bun run scripts/
 
 ```
 bun run typecheck   -> 0 erros
-bun run test:unit   -> 116 pass, 0 fail (9 arquivos)
-bun run test:int    ->  98 pass, 0 fail (21 arquivos)
+bun run test:unit   -> 128 pass, 0 fail (10 arquivos)
+bun run test:int    -> 106 pass, 0 fail (22 arquivos)
 bun run test:e2e    ->   6 pass, 0 fail (2 arquivos)
 bun run test:load   ->   4 pass, 0 fail (1 arquivo)
-total               -> 224 pass, 0 fail (33 arquivos)
-bun run test        -> 224 pass, 0 fail (suíte inteira num único processo)
+total               -> 244 pass, 0 fail (35 arquivos)
+bun test (puro)     -> 244 pass, 0 fail (sem --timeout, suíte inteira num único processo)
 ```
 
 Migrations: as 12 aplicadas; as duas novas revertidas e reaplicadas (`migration:down` ×2, `migration:up`) sobre o banco já populado pelos testes, com backfill de `wallet_version` sem erro.
@@ -30,7 +30,7 @@ OK   two concurrent 80.00 bets on different instances -> 200,422
 OK   loser rejected with INSUFFICIENT_BALANCE
 OK   SQS message consumed and processed
 OK   reconciliation consistent: 25.00, 3 entries
-OK   events published: WalletBalanceChanged, WagerTransactionProcessed, WagerTransactionRejected
+OK   events published: WagerTransactionProcessed, WalletBalanceChanged, WagerTransactionRejected
 ```
 
 1. Wallet criada em `app-1`.
