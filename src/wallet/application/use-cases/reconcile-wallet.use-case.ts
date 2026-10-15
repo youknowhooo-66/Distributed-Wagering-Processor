@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { WALLET_REPOSITORY } from '../../domain/wallet.repository.port';
 import type { WalletRepositoryPort } from '../../domain/wallet.repository.port';
 import { Money, MoneyProps } from '../../../shared/domain/value-objects';
@@ -6,6 +6,7 @@ import {
   NoopWageringMetrics,
   WageringMetrics,
 } from '../../../shared/application/ports/wagering-metrics.port';
+import { notFound } from '../../../shared/application/request-validation';
 
 export interface ReconciliationResultDto {
   walletId: string;
@@ -31,7 +32,7 @@ export class ReconcileWalletUseCase {
   async execute(walletId: string): Promise<ReconciliationResultDto> {
     const wallet = await this.walletRepo.findById(walletId);
     if (!wallet) {
-      throw new NotFoundException(`Wallet not found: ${walletId}`);
+      throw notFound('WALLET_NOT_FOUND', `Wallet not found: ${walletId}`);
     }
 
     const calculatedBalanceStr = await this.walletRepo.sumLedgerBalance(walletId);
@@ -46,15 +47,18 @@ export class ReconcileWalletUseCase {
 
     if (!isConsistent) {
       this.metrics.reconciliationDiscrepancy();
-      this.logger.error(
-        `[RECONCILIATION_DISCREPANCY] Wallet ${walletId} is INCONSISTENT! ` +
-        `Currency: ${storedMoney.currency}, Entries checked: ${checkedEntries}, ` +
-        `Balance difference: ${diffMoney.amount}, Ledger/transaction mismatches: ${transactionMismatches}`,
-      );
+      // Never corrected automatically: logged, counted and returned for investigation
+      this.logger.error({
+        msg: 'RECONCILIATION_DISCREPANCY: stored balance and ledger disagree',
+        walletId,
+        correlationId: walletId,
+        currency: storedMoney.currency,
+        checkedEntries,
+        difference: diffMoney.amount,
+        transactionMismatches,
+      });
     } else {
-      this.logger.log(
-        `[RECONCILIATION_OK] Wallet ${walletId} verified against ${checkedEntries} ledger entries.`,
-      );
+      this.logger.log({ msg: 'RECONCILIATION_OK', walletId, correlationId: walletId, checkedEntries });
     }
 
     return {

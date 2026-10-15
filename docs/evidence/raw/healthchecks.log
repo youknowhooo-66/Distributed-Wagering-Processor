@@ -1,7 +1,7 @@
 --- APP-1 Live & Ready ---
-{"status":"ok","timestamp":"2026-10-12T04:16:47.153Z"}
-{"status":"ok","timestamp":"2026-10-12T04:16:47.164Z","checks":{"postgresql":{"status":"ok","latencyMs":1},"sqs":{"status":"ok","latencyMs":2}}}
+{"status":"ok","timestamp":"2026-10-12T05:35:32.728Z"}
+{"status":"ok","timestamp":"2026-10-12T05:35:32.780Z","checks":{"postgresql":{"status":"ok","latencyMs":0},"sqs":{"status":"ok","latencyMs":37}}}
 --- APP-2 Ready ---
-{"status":"ok","timestamp":"2026-10-12T04:16:47.174Z","checks":{"postgresql":{"status":"ok","latencyMs":0},"sqs":{"status":"ok","latencyMs":2}}}
+{"status":"ok","timestamp":"2026-10-12T05:35:32.830Z","checks":{"postgresql":{"status":"ok","latencyMs":0},"sqs":{"status":"ok","latencyMs":37}}}
 --- APP-3 Ready ---
-{"status":"ok","timestamp":"2026-10-12T04:16:47.184Z","checks":{"postgresql":{"status":"ok","latencyMs":1},"sqs":{"status":"ok","latencyMs":1}}}
+{"status":"ok","timestamp":"2026-10-12T05:35:32.877Z","checks":{"postgresql":{"status":"ok","latencyMs":0},"sqs":{"status":"ok","latencyMs":33}}}

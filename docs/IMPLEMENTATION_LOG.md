@@ -101,3 +101,42 @@ Escopo: Construção incremental e correções P0/P1/P2
 - **Alertas**: `infra/prometheus/alerts.yml` (8 regras) e `alerts.test.yml`, executados com `promtool` no CI.
 - **Workers**: `PendingReferenceWorker` passa a respeitar `ENABLE_BACKGROUND_POLL`, como os demais (antes rodava durante os testes).
 - **Tipagem**: 35 erros de tipagem estrita nos testes e 15 nos scripts corrigidos; `bun run typecheck` cobre produção, testes e scripts.
+
+### UUID e desempenho (12/10/2026)
+- **UUID em maiúsculas**: o PostgreSQL devolve UUIDs em minúsculas e as checagens de referência comparam texto. Um REFUND com `playerId` em maiúsculas era rejeitado como `CROSS_PLAYER_REFERENCE`, e a mesma requisição em caixa diferente virava 409 em vez de replay. Correção: normalização na entrada do caso de uso (HTTP, SQS e worker). **Evidência**: `../src/test/integration/uuid-case.spec.ts` (falhava antes da correção).
+- **Idas ao banco com o lock da wallet**: de 10 para 6 por aposta — sem `SELECT` antes de inserir transação e eventos do outbox (identity map), eventos inseridos num único `INSERT`. Carga HTTP com 3 réplicas: p99 de 183 → ~124 ms (distribuído) e 419 → ~343 ms (hot wallet); vazão +43% e +27%. Detalhes em [TEST_REPORT.md](./TEST_REPORT.md), seção 2.
+- **Evidência de carga**: a tabela de `load-summary.md` estava vazia (o teste deixara de imprimir conflitos e retentativas); o teste volta a medi-los pelos contadores Prometheus.
+
+### Refinamento após comparação com outra solução (12/10/2026)
+- **Idempotência por provedor**: `UNIQUE (provider_id, idempotency_key)`; antes, um provedor bloqueava a chave de outro. **Evidência**: `../src/test/integration/provider-scoped-idempotency.spec.ts` (falhava antes).
+- **Ledger × transações imposto pelo banco**: gatilhos de restrição diferidos recusam no commit um lançamento divergente da transação e uma transação processada sem lançamento — a classe do bug P0-B deixa de poder ser gravada. Custo medido: 5–8% no p99 do teste de carga no processo (A/B com os gatilhos ligados e desligados).
+- **Índice ausente**: `wager_transactions.wallet_id` não tinha índice; a reconciliação varria a tabela inteira com consulta paralela e esgotou a memória compartilhada do container (erro `53100`) sob testes concorrentes. Com o índice e o filtro por wallet: 0,1 ms. Postgres no compose com `shm_size: 256mb`.
+- **Publisher do outbox**: grupos publicados em paralelo (ordem preservada dentro do grupo) e novo ciclo imediato enquanto houver trabalho; drenagem ~1,7× mais rápida. Na máquina local, com todos os serviços na mesma CPU, a drenagem contínua disputa CPU com as requisições durante carga máxima; em produção, publisher e API podem rodar em réplicas separadas.
+
+---
+
+## Revisão de Entrega (15/10/2026)
+
+Revisão contra o enunciado com a suíte executada (detalhes e motivos em `docs/GAP_ANALYSIS.md`, seção 2).
+
+- **Domínio:** regras da seção 7 extraídas para `src/wagering/domain/wager-rules.ts` (`checkReference`, `settle`, `checkWalletOwnership`); o teste de unidade que validava uma cópia da regra foi substituído por testes do código real.
+- **Referências fora de ordem:** reversão cuja referência existe mas ainda aguarda passa a aguardar também (cadeias ROLLBACK → REFUND → BET resolvem); reenvio idêntico de transação em espera é replay sem efeito colateral; mensagem SQS em espera é registrada na inbox.
+- **Titularidade:** `WALLET_PLAYER_MISMATCH` quando a wallet não pertence ao `playerId`.
+- **Schema:** `wallet_version` nos lançamentos e gatilhos diferidos que pareiam saldo e ledger; guarda de `wager_transactions` (terminal imutável, colunas de negócio imutáveis, sem DELETE); `TRUNCATE` bloqueado (ADR-006).
+- **HTTP:** `Idempotency-Key` obrigatório; `X-Correlation-Id` gerado/propagado até os eventos; `POST /wallets` validado e corrida → 409; IDs de rota, `limit` e cursor validados (400); cursor do ledger por `wallet_version`; `FAILED` → 500; PostgreSQL inalcançável → 503 + `Retry-After`.
+- **Observabilidade:** todos os logs de aplicação estruturados com os identificadores exigidos; contador `wagering_transactions_total{status}`.
+- **Operação:** healthcheck do LocalStack espera as filas; `load:http` mede conflitos, retries, outbox lag e drenagem.
+- **Documentação:** rastreabilidade refeita contra o enunciado; `ARCHITECTURE.md` único (a cópia em `docs/` e o `AUDIT_REPORT.md` desatualizados foram removidos); taxonomia de falhas com a ação esperada do provedor.
+
+### Auditoria de avaliador (15/10, segunda rodada)
+
+Simulação do que a banca testaria além da suíte (detalhes em `docs/GAP_ANALYSIS.md` §2.1):
+- **Dinheiro no ORM:** as colunas de dinheiro passaram a usar `ExactDecimalType`. O `DecimalType` do MikroORM compara como float e pulava `UPDATE`s de saldo acima de ~9×10¹³.
+- **Limite da coluna:** crédito além de `NUMERIC(19,2)` vira `BALANCE_LIMIT_EXCEEDED` (422) em vez de 500.
+- **Erros HTTP:** envelope único `{ statusCode, error: CÓDIGO, message }` em todos os endpoints. Corpo grande → 413; JSON malformado → 400.
+- **Contrato da fila:** `type` (`WagerTransactionRequested`) e `occurredAt` validados.
+- **WIN → BET:** referência validada quando a BET existe; o vínculo é gravado.
+- **Namespace e eventos:** `providerId: "system"` reservado; OPENING emite `WagerTransactionProcessed`.
+- **Testes:** `bun test` puro funciona (timeout padrão no preload).
+- **Setup:** `.env.example` criado; versão do Bun documentada.
+

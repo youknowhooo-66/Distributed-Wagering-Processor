@@ -31,6 +31,8 @@ const AMOUNT_PATTERN = /^\d{1,17}\.\d{2}$/; // NUMERIC(19,2)
 const CURRENCY_PATTERN = /^[A-Z]{3}$/;
 
 export const MAX_IDEMPOTENCY_KEY_LENGTH = 512;
+/** Provider id of internal transactions (OPENING); providers cannot use it. */
+export const RESERVED_PROVIDER_ID = 'system';
 
 function checkString(errors: string[], data: Record<string, unknown>, field: string, maxLength: number) {
   const value = data[field];
@@ -48,6 +50,9 @@ export function validateWagerPayload(input: unknown): string[] {
   const errors: string[] = [];
 
   checkString(errors, data, 'providerId', 100);
+  if (data.providerId === RESERVED_PROVIDER_ID) {
+    errors.push(`providerId "${RESERVED_PROVIDER_ID}" is reserved for internal transactions`);
+  }
   checkString(errors, data, 'externalTransactionId', 255);
   checkString(errors, data, 'roundId', 255);
   checkString(errors, data, 'gameId', 255);

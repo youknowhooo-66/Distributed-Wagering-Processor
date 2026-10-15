@@ -1,6 +1,7 @@
 import { Money } from '../../shared/domain/value-objects';
 import {
   InvalidTransactionStateError,
+  MissingReferenceError,
   FailureCode,
 } from '../../shared/domain/errors';
 import { LedgerDirection } from '../../wallet/domain/wallet-ledger-entry.entity';
@@ -73,8 +74,11 @@ export interface WagerTransactionState {
  *
  * State machine:
  *   PENDING → PROCESSED | REJECTED | FAILED | PENDING_REFERENCE
- *   PENDING_REFERENCE → PROCESSED | REJECTED | FAILED
+ *   PENDING_REFERENCE → PENDING_REFERENCE (retry rescheduled) | PROCESSED | REJECTED | FAILED
  *   PROCESSED, REJECTED, FAILED → (terminal, no further transitions)
+ *
+ * PostgreSQL enforces the same rules (trg_wager_transaction_guard): a terminal row and the
+ * business columns of any row can no longer change, and rows are never deleted.
  *
  * OPENING is internal-only: cannot be submitted via API or queue.
  * Same idempotency key with different payload is a conflict, not a replay.
@@ -85,7 +89,8 @@ export interface WagerTransactionState {
  * ├─────────────────────┼────────────────────────────────────────┤
  * │ PENDING             │ PROCESSED, REJECTED, FAILED,           │
  * │                     │ PENDING_REFERENCE                      │
- * │ PENDING_REFERENCE   │ PROCESSED, REJECTED, FAILED            │
+ * │ PENDING_REFERENCE   │ PENDING_REFERENCE, PROCESSED,          │
+ * │                     │ REJECTED, FAILED                       │
  * │ PROCESSED           │ (none — terminal)                      │
  * │ REJECTED            │ (none — terminal)                      │
  * │ FAILED              │ (none — terminal)                      │
@@ -139,9 +144,7 @@ export class WagerTransaction {
 
     // Validate reference requirement at creation
     if (tx.requiresReference() && !props.referenceExternalTransactionId) {
-      throw new Error(
-        `${props.kind} transactions require a referenceExternalTransactionId`,
-      );
+      throw new MissingReferenceError(props.kind);
     }
 
     return tx;
@@ -228,21 +231,21 @@ export class WagerTransaction {
     this._status = WagerTransactionStatus.PendingReference;
   }
 
-  reject(code: FailureCode, balanceAfter?: Money): void {
+  reject(code: FailureCode, at: Date, balanceAfter?: Money): void {
     this.assertNotTerminal('REJECTED');
     this._status = WagerTransactionStatus.Rejected;
     this._failureCode = code;
-    this._processedAt = new Date();
+    this._processedAt = at;
     if (balanceAfter) {
       this._balanceAfter = balanceAfter;
     }
   }
 
-  fail(code: FailureCode, balanceAfter?: Money): void {
+  fail(code: FailureCode, at: Date, balanceAfter?: Money): void {
     this.assertNotTerminal('FAILED');
     this._status = WagerTransactionStatus.Failed;
     this._failureCode = code;
-    this._processedAt = new Date();
+    this._processedAt = at;
     if (balanceAfter) {
       this._balanceAfter = balanceAfter;
     }

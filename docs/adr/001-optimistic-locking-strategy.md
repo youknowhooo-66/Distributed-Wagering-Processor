@@ -15,7 +15,7 @@ Avaliou-se as duas abordagens fundamentais:
 ## Decisão
 Adotou-se **Bloqueio Pessimista por Linha** na carteira (`SELECT ... FOR UPDATE` via MikroORM `LockMode.PESSIMISTIC_WRITE`) adquirido no início de cada transação de use case (`ProcessWagerTransactionUseCase`), aliado a:
 1. **Ordem Consistente de Bloqueio**: O lock da carteira é adquirido primeiro, antes de qualquer escrita no banco, eliminando deadlocks entre transações financeiras.
-2. **`lock_timeout` Curto no PostgreSQL**: Configurado via `SET LOCAL lock_timeout = '5000ms'`, mapeando timeouts eventuais para HTTP 503 com cabeçalho `Retry-After: 1`.
+2. **`lock_timeout` Curto no PostgreSQL**: Parâmetro de sessão de cada conexão do pool (`-c lock_timeout=5000ms` ao conectar, `DB_LOCK_TIMEOUT_MS`); até 12/10/2026 era um `SET LOCAL` por transação, uma ida ao banco a mais em cada aposta. Mapeia timeouts eventuais para HTTP 503 com cabeçalho `Retry-After: 1`.
 3. **Barreiras de Segurança Adicionais**:
    - Coluna inteira `version` mantida com incremento automático no agregado e persistência (`WalletMikroEntity.version`).
    - Constraint relacional `chk_wallets_balance_non_negative CHECK (balance_amount >= 0)` como barreira definitiva contra saldo negativo.

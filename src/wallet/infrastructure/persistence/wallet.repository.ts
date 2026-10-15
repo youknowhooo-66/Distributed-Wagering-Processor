@@ -76,6 +76,7 @@ export class WalletRepository implements WalletRepositoryPort {
     entity.currency = entry.money.currency;
     entity.balanceBefore = entry.balanceBefore.amount;
     entity.balanceAfter = entry.balanceAfter.amount;
+    entity.walletVersion = entry.walletVersion;
     entity.createdAt = entry.createdAt;
 
     this.em.persist(entity);
@@ -84,21 +85,15 @@ export class WalletRepository implements WalletRepositoryPort {
   async findLedgerEntries(
     walletId: string,
     limit: number,
-    cursor?: { createdAt: Date; id: string },
+    beforeVersion?: number,
   ): Promise<WalletLedgerEntry[]> {
-    const qb = this.em.createQueryBuilder(WalletLedgerEntryMikroEntity);
-    qb.where({ walletId });
-
-    if (cursor) {
-      qb.andWhere(
-        '(created_at < ? OR (created_at = ? AND id < ?))',
-        [cursor.createdAt, cursor.createdAt, cursor.id],
-      );
-    }
-
-    qb.orderBy({ createdAt: 'DESC', id: 'DESC' }).limit(limit);
-
-    const entities = await qb.getResultList();
+    // walletVersion is unique and gap-free per wallet (uq_ledger_wallet_version), so the order is
+    // total and new entries never shift an existing page: a stable keyset cursor
+    const entities = await this.em.find(
+      WalletLedgerEntryMikroEntity,
+      beforeVersion === undefined ? { walletId } : { walletId, walletVersion: { $lt: beforeVersion } },
+      { orderBy: { walletVersion: 'DESC' }, limit },
+    );
 
     return entities.map((e) =>
       WalletLedgerEntry.rehydrate({
@@ -112,6 +107,7 @@ export class WalletRepository implements WalletRepositoryPort {
         balanceBeforeCurrency: e.currency,
         balanceAfterAmount: e.balanceAfter,
         balanceAfterCurrency: e.currency,
+        walletVersion: e.walletVersion,
         createdAt: e.createdAt,
       }),
     );
@@ -161,7 +157,8 @@ export class WalletRepository implements WalletRepositoryPort {
            WHERE t.wallet_id = ?
              AND t.status = 'PROCESSED'
              AND t.kind <> 'LOSS'
-             AND NOT EXISTS (SELECT 1 FROM wallet_ledger_entries l WHERE l.transaction_id = t.id))
+             AND NOT EXISTS (SELECT 1 FROM wallet_ledger_entries l
+                              WHERE l.wallet_id = t.wallet_id AND l.transaction_id = t.id))
          AS mismatches`,
       [walletId, walletId],
     );

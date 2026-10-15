@@ -10,7 +10,8 @@ export interface WalletRepositoryPort {
   findByPlayerIdAndCurrency(playerId: string, currency: string): Promise<Wallet | null>;
   save(wallet: Wallet): Promise<void>;
   saveLedgerEntry(entry: WalletLedgerEntry): Promise<void>;
-  findLedgerEntries(walletId: string, limit: number, cursor?: { createdAt: Date; id: string }): Promise<WalletLedgerEntry[]>;
+  /** Newest first; `beforeVersion` (exclusive) continues a previous page. */
+  findLedgerEntries(walletId: string, limit: number, beforeVersion?: number): Promise<WalletLedgerEntry[]>;
   sumLedgerBalance(walletId: string): Promise<string>;
   countLedgerEntries(walletId: string): Promise<number>;
   /**

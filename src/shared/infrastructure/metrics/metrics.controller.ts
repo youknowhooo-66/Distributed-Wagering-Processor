@@ -7,6 +7,13 @@ collectDefaultMetrics({ prefix: 'wagering_' });
 
 // ── Business counters ───────────────────────────────────────────────────────
 
+/** Every final outcome of a wager command, by resulting status (replays are counted apart). */
+export const transactionsByStatusTotal = new Counter({
+  name: 'wagering_transactions_total',
+  help: 'Wager transactions by resulting status (PROCESSED, REJECTED, PENDING_REFERENCE, FAILED); idempotent replays excluded',
+  labelNames: ['kind', 'status'],
+});
+
 export const wagersProcessedTotal = new Counter({
   name: 'wagering_transactions_processed_total',
   help: 'Total wager transactions successfully processed',

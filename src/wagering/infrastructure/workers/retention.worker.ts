@@ -32,7 +32,7 @@ export class RetentionWorker implements OnModuleInit, OnModuleDestroy {
       try {
         await this.purgeUseCase.execute();
       } catch (err) {
-        this.logger.error(`Error in RetentionWorker: ${err}`);
+        this.logger.error({ msg: 'retention worker error', error: (err as Error)?.message ?? String(err) });
       } finally {
         this.scheduleNextRun(this.intervalMs);
       }

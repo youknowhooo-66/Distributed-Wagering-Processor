@@ -3,18 +3,45 @@ import { OptimisticLockError } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/postgresql';
 import {
   ConcurrencyConflictError,
+  InfrastructureUnavailableError,
   type TransactionScope,
   UniqueViolationError,
   UnitOfWork,
 } from '../../application/ports/unit-of-work.port';
+
+/** Network-level failures of the driver socket. */
+const NETWORK_ERROR_CODES = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EPIPE', 'EHOSTUNREACH', 'EAI_AGAIN']);
+
+/**
+ * PostgreSQL / driver error meaning "database unavailable right now": SQLSTATE class 08
+ * (connection exception), 57P01-57P03 (shutdown / cannot connect now), 53300 (too many
+ * connections), socket errors, and the pool's acquire timeout.
+ */
+export function isDatabaseUnavailable(err: unknown): boolean {
+  const e = (err ?? {}) as { code?: unknown; name?: unknown; message?: unknown; cause?: unknown };
+  const code = typeof e.code === 'string' ? e.code : '';
+  if (code.startsWith('08') || ['57P01', '57P02', '57P03', '53300'].includes(code)) return true;
+  if (NETWORK_ERROR_CODES.has(code)) return true;
+  if (e.name === 'KnexTimeoutError' || e.name === 'ConnectionException') return true;
+  if (typeof e.message === 'string' && /Connection terminated|Timeout acquiring a connection/i.test(e.message)) return true;
+  // AggregateError (dual-stack connect) and wrapped driver errors
+  const nested = (err as { errors?: unknown[] })?.errors;
+  if (Array.isArray(nested) && nested.some(isDatabaseUnavailable)) return true;
+  return e.cause !== undefined && e.cause !== err ? isDatabaseUnavailable(e.cause) : false;
+}
 import { WalletRepository } from '../../../wallet/infrastructure/persistence/wallet.repository';
 import { WagerTransactionRepository } from '../../../wagering/infrastructure/persistence/wager-transaction.repository';
 
-const LOCK_TIMEOUT_PATTERN = /^\d+(ms|s)?$/;
-
 /** PostgreSQL SQLSTATE -> typed application error. Anything else is rethrown unchanged. */
 export function translateDbError(err: unknown): unknown {
-  if (err instanceof ConcurrencyConflictError || err instanceof UniqueViolationError) return err;
+  if (
+    err instanceof ConcurrencyConflictError ||
+    err instanceof UniqueViolationError ||
+    err instanceof InfrastructureUnavailableError
+  ) {
+    return err;
+  }
+  if (isDatabaseUnavailable(err)) return new InfrastructureUnavailableError('postgresql', err);
   if (err instanceof OptimisticLockError) return new ConcurrencyConflictError('OPTIMISTIC_LOCK', err);
 
   const { code, constraint } = (err ?? {}) as { code?: string; constraint?: string };
@@ -34,16 +61,8 @@ export function translateDbError(err: unknown): unknown {
 
 @Injectable()
 export class MikroOrmUnitOfWork extends UnitOfWork {
-  private readonly lockTimeout: string;
-
   constructor(private readonly em: EntityManager) {
     super();
-    const configured = process.env.DB_LOCK_TIMEOUT_MS || '5000ms';
-    // Validated because SET LOCAL does not accept bind parameters
-    if (!LOCK_TIMEOUT_PATTERN.test(configured)) {
-      throw new Error(`Invalid DB_LOCK_TIMEOUT_MS: "${configured}" (expected e.g. "5000ms")`);
-    }
-    this.lockTimeout = configured;
   }
 
   /** Scope over an EntityManager that is already inside a transaction. */
@@ -57,10 +76,8 @@ export class MikroOrmUnitOfWork extends UnitOfWork {
 
   async transactional<T>(work: (scope: TransactionScope) => Promise<T>): Promise<T> {
     try {
-      return await this.em.fork().transactional(async (em) => {
-        await em.execute(`SET LOCAL lock_timeout = '${this.lockTimeout}'`);
-        return work(MikroOrmUnitOfWork.scopeOf(em));
-      });
+      // lock_timeout is a session setting of every pooled connection (mikro-orm.config.ts)
+      return await this.em.fork().transactional((em) => work(MikroOrmUnitOfWork.scopeOf(em)));
     } catch (err) {
       throw translateDbError(err);
     }

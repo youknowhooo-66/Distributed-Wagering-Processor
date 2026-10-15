@@ -1,3 +1,3 @@
-NAME                IMAGE                     COMMAND                  SERVICE      CREATED             STATUS                       PORTS
-jungle-localstack   localstack/localstack:3   "docker-entrypoint.sh"   localstack   About an hour ago   Up 52 minutes (healthy)      0.0.0.0:4566->4566/tcp, [::]:4566->4566/tcp
-jungle-postgres     postgres:16-alpine        "docker-entrypoint.s…"   postgres     12 hours ago        Up About an hour (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+NAME                IMAGE                     COMMAND                  SERVICE      CREATED          STATUS                    PORTS
+jungle-localstack   localstack/localstack:3   "docker-entrypoint.sh"   localstack   3 hours ago      Up 2 hours (healthy)      0.0.0.0:4566->4566/tcp, [::]:4566->4566/tcp
+jungle-postgres     postgres:16-alpine        "docker-entrypoint.s…"   postgres     21 minutes ago   Up 21 minutes (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp

@@ -31,10 +31,10 @@ export class PendingReferenceWorker implements OnModuleInit, OnModuleDestroy {
       try {
         const resolved = await this.retryPendingReferencesUseCase.execute();
         if (resolved > 0) {
-          this.logger.log(`PendingReferenceWorker: processed ${resolved} items`);
+          this.logger.log({ msg: 'pending references resolved', resolved });
         }
       } catch (err) {
-        this.logger.error(`Error in PendingReferenceWorker: ${err}`);
+        this.logger.error({ msg: 'pending reference worker error', error: (err as Error)?.message ?? String(err) });
       } finally {
         this.scheduleNextRun(2000); // Poll every 2s
       }

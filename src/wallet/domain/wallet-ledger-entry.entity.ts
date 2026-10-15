@@ -14,6 +14,8 @@ export interface CreateLedgerEntryProps {
   money: Money;
   balanceBefore: Money;
   balanceAfter: Money;
+  /** Wallet version after this entry (the wallet's balance version it produced). */
+  walletVersion: number;
   createdAt: Date;
 }
 
@@ -28,6 +30,7 @@ export interface LedgerEntryState {
   balanceBeforeCurrency: string;
   balanceAfterAmount: string;
   balanceAfterCurrency: string;
+  walletVersion: number;
   createdAt: Date;
 }
 
@@ -41,6 +44,10 @@ export interface LedgerEntryState {
  *
  * One transaction produces at most one ledger entry per wallet.
  * Operations without balance effect (LOSS, REJECTED) produce no entry.
+ *
+ * `walletVersion` is the wallet version this entry moved the balance to. Versions form a
+ * gap-free sequence per wallet (one balance change = one entry = version + 1), which
+ * PostgreSQL enforces (UNIQUE + deferred triggers) and the ledger cursor relies on.
  */
 export class WalletLedgerEntry {
   private constructor(
@@ -51,6 +58,7 @@ export class WalletLedgerEntry {
     public readonly money: Money,
     public readonly balanceBefore: Money,
     public readonly balanceAfter: Money,
+    public readonly walletVersion: number,
     public readonly createdAt: Date,
   ) {}
 
@@ -63,9 +71,16 @@ export class WalletLedgerEntry {
       props.money,
       props.balanceBefore,
       props.balanceAfter,
+      props.walletVersion,
       props.createdAt,
     );
 
+    if (!props.money.isPositive()) {
+      throw new InvalidLedgerEntryError(`amount must be greater than zero: ${props.money.toString()}`);
+    }
+    if (!Number.isInteger(props.walletVersion) || props.walletVersion < 1) {
+      throw new InvalidLedgerEntryError(`walletVersion must be a positive integer: ${props.walletVersion}`);
+    }
     if (!entry.isBalanced()) {
       throw new InvalidLedgerEntryError(
         `arithmetic mismatch: balanceBefore=${props.balanceBefore.toString()}, ` +
@@ -90,6 +105,7 @@ export class WalletLedgerEntry {
       Money.fromInternal(state.moneyAmount, state.moneyCurrency),
       Money.fromInternal(state.balanceBeforeAmount, state.balanceBeforeCurrency),
       Money.fromInternal(state.balanceAfterAmount, state.balanceAfterCurrency),
+      state.walletVersion,
       state.createdAt,
     );
   }

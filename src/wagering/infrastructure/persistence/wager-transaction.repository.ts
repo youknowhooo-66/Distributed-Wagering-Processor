@@ -22,8 +22,8 @@ export class WagerTransactionRepository implements WagerTransactionRepositoryPor
     return entity ? this.toDomain(entity) : null;
   }
 
-  async findByIdempotencyKey(key: string): Promise<WagerTransaction | null> {
-    const entity = await this.em.findOne(WagerTransactionMikroEntity, { idempotencyKey: key });
+  async findByIdempotencyKey(providerId: string, key: string): Promise<WagerTransaction | null> {
+    const entity = await this.em.findOne(WagerTransactionMikroEntity, { providerId, idempotencyKey: key });
     return entity ? this.toDomain(entity) : null;
   }
 
@@ -38,8 +38,16 @@ export class WagerTransactionRepository implements WagerTransactionRepositoryPor
     return entity ? this.toDomain(entity) : null;
   }
 
+  /**
+   * Insert or update without a database round trip: updates always follow a read in the same
+   * unit of work, so an existing transaction is already in the identity map. Saving an existing
+   * row that was not read first fails loudly on the primary key instead of writing silently.
+   * (Called while the wallet row lock is held, so every avoided query shortens the lock.)
+   */
   async save(tx: WagerTransaction): Promise<void> {
-    let entity = await this.em.findOne(WagerTransactionMikroEntity, { id: tx.id });
+    let entity = this.em
+      .getUnitOfWork()
+      .getById<WagerTransactionMikroEntity>(WagerTransactionMikroEntity.name, tx.id);
     if (!entity) {
       entity = new WagerTransactionMikroEntity();
       entity.id = tx.id;
@@ -112,24 +120,18 @@ export class WagerTransactionRepository implements WagerTransactionRepositoryPor
     });
   }
 
+  /** Outbox messages are only ever created here (the publisher updates them in SQL). */
   async saveOutboxMessage(outbox: OutboxMessage): Promise<void> {
-    let entity = await this.em.findOne(OutboxMessageMikroEntity, { id: outbox.id });
-    if (!entity) {
-      entity = new OutboxMessageMikroEntity();
-      entity.id = outbox.id;
-      entity.aggregateId = outbox.aggregateId;
-      entity.eventType = outbox.eventType;
-      entity.payload = outbox.payload as Record<string, unknown>;
-      entity.occurredAt = outbox.occurredAt;
-      entity.attempts = outbox.attempts;
-      entity.nextAttemptAt = outbox.nextAttemptAt;
-      entity.publishedAt = outbox.publishedAt;
-      this.em.persist(entity);
-    } else {
-      entity.attempts = outbox.attempts;
-      entity.nextAttemptAt = outbox.nextAttemptAt;
-      entity.publishedAt = outbox.publishedAt;
-    }
+    const entity = new OutboxMessageMikroEntity();
+    entity.id = outbox.id;
+    entity.aggregateId = outbox.aggregateId;
+    entity.eventType = outbox.eventType;
+    entity.payload = outbox.payload as Record<string, unknown>;
+    entity.occurredAt = outbox.occurredAt;
+    entity.attempts = outbox.attempts;
+    entity.nextAttemptAt = outbox.nextAttemptAt;
+    entity.publishedAt = outbox.publishedAt;
+    this.em.persist(entity);
   }
 
   /**

@@ -49,3 +49,10 @@ describe('validateWagerPayload', () => {
     expect(validateWagerPayload('BET')).toEqual(['payload must be an object']);
   });
 });
+
+describe('validateWagerPayload — reserved provider id', () => {
+  it('rejects providerId "system", reserved for internal transactions (OPENING)', () => {
+    const violations = validateWagerPayload({ ...valid, providerId: 'system' });
+    expect(violations.some((v) => v.includes('reserved'))).toBe(true);
+  });
+});

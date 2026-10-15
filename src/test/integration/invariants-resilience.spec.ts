@@ -402,7 +402,7 @@ describe('Invariants & Resilience Integration Tests — Permanent Verification S
 
     const payload = {
       messageId: msgId,
-      type: 'ProcessWager',
+      type: 'WagerTransactionRequested',
       occurredAt: new Date().toISOString(),
       data: {
         providerId: 'prov-crash-real',
@@ -643,7 +643,7 @@ describe('Invariants & Resilience Integration Tests — Permanent Verification S
     const rejectMsgId = 'msg-rej-' + generateId();
     const rejectPayload = {
       messageId: rejectMsgId,
-      type: 'ProcessWager',
+      type: 'WagerTransactionRequested',
       occurredAt: new Date().toISOString(),
       data: {
         providerId: 'prov-e',
@@ -758,7 +758,7 @@ describe('Invariants & Resilience Integration Tests — Permanent Verification S
             ReceiptHandle: 'mock-receipt-backoff',
             Body: JSON.stringify({
               messageId: 'mock-e2-backoff',
-              type: 'ProcessWager',
+              type: 'WagerTransactionRequested',
               occurredAt: new Date().toISOString(),
               data: {
                 providerId: 'prov-backoff',
@@ -802,7 +802,7 @@ describe('Invariants & Resilience Integration Tests — Permanent Verification S
     const dlqTestExtId = 'ext-e2-dlq-' + generateId();
     const fakeBody = JSON.stringify({
       messageId: dlqTestMsgId,
-      type: 'ProcessWager',
+      type: 'WagerTransactionRequested',
       occurredAt: new Date().toISOString(),
       data: {
         providerId: 'prov-e2-dlq',
@@ -1269,7 +1269,7 @@ describe('Invariants & Resilience Integration Tests — Permanent Verification S
     const makeMsg = (msgId: string) =>
       JSON.stringify({
         messageId: msgId,
-        type: 'ProcessWager',
+        type: 'WagerTransactionRequested',
         occurredAt: new Date().toISOString(),
         data: {
           providerId: 'prov-sigterm',

@@ -17,12 +17,12 @@ async function bootstrap() {
   // die by SIGKILL at the end of the grace period. Exit explicitly once close() completes.
   for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     process.once(signal, async () => {
-      logger.log(`${signal} received: closing application`);
+      logger.log({ msg: 'shutdown signal received: closing application', signal });
       try {
         await app.close();
         process.exit(0);
       } catch (err) {
-        logger.error(`Error during shutdown: ${(err as Error).message}`);
+        logger.error({ msg: 'error during shutdown', error: (err as Error).message });
         process.exit(1);
       }
     });
@@ -30,7 +30,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  logger.log(`Application started and listening on port ${port}`);
+  logger.log({ msg: 'application started', port: Number(port), instanceId: process.env.INSTANCE_ID });
 }
 
 bootstrap();

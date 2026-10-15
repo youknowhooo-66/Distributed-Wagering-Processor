@@ -73,9 +73,11 @@ describe('WagerTransaction Entity', () => {
 
     it('transitions from PENDING to REJECTED', () => {
       const tx = WagerTransaction.create(baseProps);
-      tx.reject(FailureCode.INSUFFICIENT_BALANCE);
+      const at = new Date('2026-01-01T00:00:00.000Z');
+      tx.reject(FailureCode.INSUFFICIENT_BALANCE, at);
 
       expect(tx.status).toBe(WagerTransactionStatus.Rejected);
+      expect(tx.processedAt).toEqual(at);
       expect(tx.failureCode).toBe(FailureCode.INSUFFICIENT_BALANCE);
       expect(tx.isTerminal()).toBe(true);
     });
@@ -99,7 +101,7 @@ describe('WagerTransaction Entity', () => {
       const tx = WagerTransaction.create(baseProps);
       tx.markProcessed(undefined, new Date());
 
-      expect(() => tx.reject(FailureCode.INSUFFICIENT_BALANCE)).toThrow(
+      expect(() => tx.reject(FailureCode.INSUFFICIENT_BALANCE, new Date())).toThrow(
         InvalidTransactionStateError,
       );
       expect(() => tx.markProcessed(undefined, new Date())).toThrow(

@@ -7,6 +7,7 @@ export {
   WalletNotFoundError,
   InvalidTransactionStateError,
   InvalidLedgerEntryError,
+  MissingReferenceError,
   IdempotencyConflictError,
   ReferenceNotFoundError,
   ReferenceAlreadyReversedError,

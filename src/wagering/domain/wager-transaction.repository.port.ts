@@ -6,7 +6,8 @@ export const WAGER_TRANSACTION_REPOSITORY = Symbol('WagerTransactionRepositoryPo
 
 export interface WagerTransactionRepositoryPort {
   findById(id: string): Promise<WagerTransaction | null>;
-  findByIdempotencyKey(key: string): Promise<WagerTransaction | null>;
+  /** Idempotency keys are unique per provider. */
+  findByIdempotencyKey(providerId: string, key: string): Promise<WagerTransaction | null>;
   findByProviderAndExternalId(providerId: string, externalId: string): Promise<WagerTransaction | null>;
   save(transaction: WagerTransaction): Promise<void>;
   saveInboxMessage(inbox: InboxMessage): Promise<void>;

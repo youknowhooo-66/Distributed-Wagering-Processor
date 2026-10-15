@@ -81,14 +81,16 @@ export class OutboxMessage {
   }
 
   /**
-   * Increments attempts and calculates next attempt timestamp using exponential backoff with cap.
-   * base: 1s, formula: min(1s * 2^attempts, 60s)
+   * Backoff after the n-th failed publication: min(1s * 2^attempts, 60s).
+   * Single source of the rule: the publisher worker applies it in SQL with the same value.
    */
+  static retryDelayMs(attempts: number): number {
+    return Math.min(1000 * Math.pow(2, attempts), 60_000);
+  }
+
+  /** Increments attempts and schedules the next attempt with {@link retryDelayMs}. */
   scheduleRetry(now: Date): void {
     this._attempts++;
-    const baseDelayMs = 1000;
-    const maxDelayMs = 60_000;
-    const delayMs = Math.min(baseDelayMs * Math.pow(2, this._attempts), maxDelayMs);
-    this._nextAttemptAt = new Date(now.getTime() + delayMs);
+    this._nextAttemptAt = new Date(now.getTime() + OutboxMessage.retryDelayMs(this._attempts));
   }
 }

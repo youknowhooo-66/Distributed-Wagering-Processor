@@ -55,7 +55,7 @@ export class PurgeProcessedMessagesUseCase {
     );
 
     if (outboxDeleted > 0 || inboxDeleted > 0) {
-      this.logger.log(`Retention purge: ${outboxDeleted} outbox, ${inboxDeleted} inbox records removed`);
+      this.logger.log({ msg: 'retention purge', outboxDeleted, inboxDeleted });
     }
     return { outboxDeleted, inboxDeleted };
   }

@@ -50,7 +50,13 @@ export class RetryPendingReferencesUseCase {
           resolvedCount++;
           this.metrics.pendingReferenceResolved();
         } else {
-          this.logger.error(`Error resolving pending reference for tx ${pending.id}: ${err}`);
+          this.logger.error({
+            msg: 'error resolving pending reference',
+            transactionId: pending.id,
+            walletId: pending.walletId,
+            providerId: pending.providerId,
+            error: (err as Error)?.message ?? String(err),
+          });
         }
       }
     }
@@ -70,9 +76,14 @@ export class RetryPendingReferencesUseCase {
 
       if (tx.retryCount >= this.MAX_RETRIES) {
         await this.reject(scope, tx.id, FailureCode.REFERENCE_TIMEOUT);
-        this.logger.warn(
-          `Transaction ${tx.id} timed out waiting for reference: marked REJECTED with REFERENCE_TIMEOUT`,
-        );
+        this.logger.warn({
+          msg: 'pending reference timed out: REJECTED with REFERENCE_TIMEOUT',
+          correlationId: tx.id,
+          transactionId: tx.id,
+          walletId: tx.walletId,
+          providerId: tx.providerId,
+          retryCount: tx.retryCount,
+        });
         return true;
       }
 
@@ -87,7 +98,7 @@ export class RetryPendingReferencesUseCase {
       }
 
       // Replays the persisted payload, so the idempotency hash matches the stored one
-      await this.processWagerUseCase.executeInScope(scope, {
+      const result = await this.processWagerUseCase.executeInScope(scope, {
         providerId: tx.providerId,
         externalTransactionId: tx.externalTransactionId,
         idempotencyKey: tx.idempotencyKey,
@@ -98,10 +109,27 @@ export class RetryPendingReferencesUseCase {
         kind: tx.kind,
         money: tx.money.toJSON(),
         referenceExternalTransactionId: tx.referenceExternalTransactionId,
+        correlationId: tx.id,
       });
+
+      if (result.status === WagerTransactionStatus.PendingReference) {
+        // The reference arrived but is itself still waiting (chained out-of-order reversals)
+        tx.scheduleRetry(now);
+        await scope.wagers.save(tx);
+        return false;
+      }
+
       // Flush inside the try of execute(): unique violations surface here, not at a later commit
       await scope.flush();
-      this.logger.log(`Successfully resolved pending reference for tx ${tx.id}`);
+      this.logger.log({
+        msg: 'pending reference resolved',
+        correlationId: tx.id,
+        transactionId: tx.id,
+        walletId: tx.walletId,
+        providerId: tx.providerId,
+        status: result.status,
+        failureCode: result.failureCode,
+      });
       return true;
     });
   }
@@ -110,7 +138,7 @@ export class RetryPendingReferencesUseCase {
     const tx = await scope.wagers.findById(txId);
     if (!tx || tx.status !== WagerTransactionStatus.PendingReference) return;
     const wallet = await scope.wallets.findById(tx.walletId);
-    tx.reject(failureCode, wallet?.balance);
+    tx.reject(failureCode, new Date(), wallet?.balance);
     await scope.wagers.save(tx);
     const rejectedEvent = WagerTransactionRejected.from(tx, failureCode, { correlationId: tx.id });
     await scope.wagers.saveOutboxMessage(OutboxMessage.enqueue(rejectedEvent));

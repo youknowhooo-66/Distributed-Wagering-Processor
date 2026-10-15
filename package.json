@@ -19,6 +19,7 @@
     "migration:down": "bun run src/shared/infrastructure/database/run-migrations-down.ts",
     "migration:list": "bun run mikro-orm migration:list",
     "dlq:redrive": "bun run scripts/dlq-redrive.ts",
+    "load:http": "bun run scripts/load-http.ts",
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
