@@ -1,8 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { WAGER_TRANSACTION_REPOSITORY } from '../../domain/wager-transaction.repository.port';
 import type { WagerTransactionRepositoryPort } from '../../domain/wager-transaction.repository.port';
 import { WagerTransaction, WagerTransactionKind, WagerTransactionStatus } from '../../domain/wager-transaction.entity';
 import { MoneyProps } from '../../../shared/domain/value-objects';
+import { notFound } from '../../../shared/application/request-validation';
 
 export interface TransactionDto {
   id: string;
@@ -32,7 +33,7 @@ export class GetTransactionUseCase {
   async executeById(id: string): Promise<TransactionDto> {
     const tx = await this.wagerRepo.findById(id);
     if (!tx) {
-      throw new NotFoundException(`Transaction not found: ${id}`);
+      throw notFound('TRANSACTION_NOT_FOUND', `Transaction not found: ${id}`);
     }
     return this.toDto(tx);
   }
@@ -46,7 +47,8 @@ export class GetTransactionUseCase {
       externalTransactionId,
     );
     if (!tx) {
-      throw new NotFoundException(
+      throw notFound(
+        'TRANSACTION_NOT_FOUND',
         `Transaction not found for provider ${providerId} and external ID ${externalTransactionId}`,
       );
     }

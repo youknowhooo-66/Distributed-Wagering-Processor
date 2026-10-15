@@ -1,7 +1,8 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { WALLET_REPOSITORY } from '../../domain/wallet.repository.port';
 import type { WalletRepositoryPort } from '../../domain/wallet.repository.port';
 import { WalletDto } from './open-wallet.use-case';
+import { notFound } from '../../../shared/application/request-validation';
 
 @Injectable()
 export class GetWalletUseCase {
@@ -10,7 +11,7 @@ export class GetWalletUseCase {
   async execute(walletId: string): Promise<WalletDto> {
     const wallet = await this.walletRepo.findById(walletId);
     if (!wallet) {
-      throw new NotFoundException(`Wallet not found: ${walletId}`);
+      throw notFound('WALLET_NOT_FOUND', `Wallet not found: ${walletId}`);
     }
 
     return {

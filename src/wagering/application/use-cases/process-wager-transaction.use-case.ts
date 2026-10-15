@@ -3,7 +3,6 @@ import {
   Optional,
   ConflictException,
   BadRequestException,
-  NotFoundException,
   ServiceUnavailableException,
   Logger,
 } from '@nestjs/common';
@@ -40,6 +39,7 @@ import {
   NoopWageringMetrics,
   WageringMetrics,
 } from '../../../shared/application/ports/wagering-metrics.port';
+import { notFound } from '../../../shared/application/request-validation';
 
 export interface ProcessWagerCommand {
   providerId: string;
@@ -116,9 +116,12 @@ export class ProcessWagerTransactionUseCase {
 
         if (err instanceof UniqueViolationError && err.constraint === UQ_PROVIDER_EXTERNAL) {
           this.logger.warn({ msg: 'external id reused under a different Idempotency-Key', ...this.logFields(cmd) });
-          throw new ConflictException(
-            'Transaction with this providerId and externalTransactionId already exists under a different Idempotency-Key',
-          );
+          throw new ConflictException({
+            statusCode: 409,
+            error: 'EXTERNAL_TRANSACTION_CONFLICT',
+            message:
+              'Transaction with this providerId and externalTransactionId already exists under a different Idempotency-Key',
+          });
         }
 
         if (err instanceof IdempotencyConflictError) {
@@ -200,7 +203,7 @@ export class ProcessWagerTransactionUseCase {
     // 1. Serialize per wallet: row lock held until commit
     const wallet = await wallets.findByIdForUpdate(cmd.walletId);
     if (!wallet) {
-      throw new NotFoundException(`Wallet not found: ${cmd.walletId}`);
+      throw notFound('WALLET_NOT_FOUND', `Wallet not found: ${cmd.walletId}`);
     }
 
     // 2. Idempotency — payload must match for every existing state,
@@ -443,7 +446,11 @@ export class ProcessWagerTransactionUseCase {
 
   private assertExternalKind(cmd: ProcessWagerCommand): void {
     if (cmd.kind === WagerTransactionKind.Opening) {
-      throw new BadRequestException('OPENING transactions are internal only');
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'INVALID_PAYLOAD',
+        message: ['OPENING transactions are internal only'],
+      });
     }
   }
 

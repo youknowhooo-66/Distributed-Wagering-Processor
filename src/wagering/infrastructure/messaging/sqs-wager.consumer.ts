@@ -46,6 +46,10 @@ export interface SqsWagerMessageEnvelope {
   };
 }
 
+/** The only message type this consumer accepts (section 10 contract). */
+export const WAGER_MESSAGE_TYPE = 'WagerTransactionRequested';
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
 /** Receives after which a transient (non-contention) failure is sent to the DLQ. */
 const MAX_TRANSIENT_RECEIVES = 5;
 /**
@@ -268,8 +272,14 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
     if (!envelope || typeof envelope !== 'object') return ['envelope must be an object'];
     const env = envelope as Partial<SqsWagerMessageEnvelope>;
     const violations: string[] = [];
-    if (typeof env.messageId !== 'string' || env.messageId.trim() === '') {
-      violations.push('messageId must be a non-empty string');
+    if (typeof env.messageId !== 'string' || env.messageId.trim() === '' || env.messageId.length > 255) {
+      violations.push('messageId must be a non-empty string up to 255 characters');
+    }
+    if (env.type !== WAGER_MESSAGE_TYPE) {
+      violations.push(`type must be "${WAGER_MESSAGE_TYPE}"`);
+    }
+    if (typeof env.occurredAt !== 'string' || !ISO_DATE_TIME.test(env.occurredAt) || Number.isNaN(Date.parse(env.occurredAt))) {
+      violations.push('occurredAt must be an ISO-8601 date-time');
     }
     if (
       env.correlationId !== undefined &&

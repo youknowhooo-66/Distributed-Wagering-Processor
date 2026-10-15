@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { WALLET_REPOSITORY } from '../../domain/wallet.repository.port';
 import type { WalletRepositoryPort } from '../../domain/wallet.repository.port';
 import { Money, MoneyProps } from '../../../shared/domain/value-objects';
@@ -6,6 +6,7 @@ import {
   NoopWageringMetrics,
   WageringMetrics,
 } from '../../../shared/application/ports/wagering-metrics.port';
+import { notFound } from '../../../shared/application/request-validation';
 
 export interface ReconciliationResultDto {
   walletId: string;
@@ -31,7 +32,7 @@ export class ReconcileWalletUseCase {
   async execute(walletId: string): Promise<ReconciliationResultDto> {
     const wallet = await this.walletRepo.findById(walletId);
     if (!wallet) {
-      throw new NotFoundException(`Wallet not found: ${walletId}`);
+      throw notFound('WALLET_NOT_FOUND', `Wallet not found: ${walletId}`);
     }
 
     const calculatedBalanceStr = await this.walletRepo.sumLedgerBalance(walletId);

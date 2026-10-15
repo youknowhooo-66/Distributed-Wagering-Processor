@@ -96,7 +96,7 @@ describe('SQS Consumer Integration — Contracts, Inbox Dedup, DLQ, and ACK Inva
 
     const envelope = {
       messageId: msgId,
-      type: 'ProcessWager',
+      type: 'WagerTransactionRequested',
       occurredAt: new Date().toISOString(),
       data: {
         providerId: 'provider-sqs',

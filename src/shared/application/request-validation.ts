@@ -1,6 +1,11 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 404 with a machine-readable code (WALLET_NOT_FOUND, TRANSACTION_NOT_FOUND). */
+export function notFound(code: 'WALLET_NOT_FOUND' | 'TRANSACTION_NOT_FOUND', message: string): NotFoundException {
+  return new NotFoundException({ statusCode: 404, error: code, message });
+}
 
 /** 400 INVALID_PAYLOAD with the list of violations (same shape for every endpoint). */
 export function invalidPayload(violations: string[]): BadRequestException {

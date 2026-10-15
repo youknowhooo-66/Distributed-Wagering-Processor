@@ -274,7 +274,7 @@ const bgTestOutput = sh(`bun -e '
     QueueUrl: "http://localhost:4566/000000000000/wager-transactions.fifo",
     MessageBody: JSON.stringify({
       messageId: msgId,
-      type: "ProcessWager",
+      type: "WagerTransactionRequested",
       occurredAt: new Date().toISOString(),
       data: {
         providerId: "prov-evidence",

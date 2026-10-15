@@ -1,8 +1,9 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { WALLET_REPOSITORY } from '../../domain/wallet.repository.port';
 import type { WalletRepositoryPort } from '../../domain/wallet.repository.port';
 import { MoneyProps } from '../../../shared/domain/value-objects';
 import { LedgerDirection } from '../../domain/wallet-ledger-entry.entity';
+import { notFound } from '../../../shared/application/request-validation';
 
 export interface LedgerEntryDto {
   id: string;
@@ -72,7 +73,7 @@ export class GetWalletLedgerUseCase {
 
     const wallet = await this.walletRepo.findById(walletId);
     if (!wallet) {
-      throw new NotFoundException(`Wallet not found: ${walletId}`);
+      throw notFound('WALLET_NOT_FOUND', `Wallet not found: ${walletId}`);
     }
 
     // Fetch limit + 1 to determine if next page exists
