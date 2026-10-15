@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { EntityManager } from '@mikro-orm/postgresql';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { createSqsClient } from '../../../shared/infrastructure/messaging/sqs.client';
-import { OutboxMessageMikroEntity } from '../persistence/outbox-message.mikro-entity';
+import { OutboxMessage } from '../../domain/outbox-message.entity';
 import { outboxLagSecondsGauge, outboxPendingGauge } from '../../../shared/infrastructure/metrics/metrics.controller';
 
 const MAX_GROUPS_PER_POLL = 50;
@@ -45,7 +45,7 @@ export class OutboxPublisherWorker implements OnModuleInit, OnModuleDestroy {
       try {
         published = await this.pollAndPublish();
       } catch (err) {
-        this.logger.error(`Outbox publisher loop error: ${err}`);
+        this.logger.error({ msg: 'outbox publisher loop error', error: (err as Error)?.message ?? String(err) });
       } finally {
         // Keep draining while there is work; wait only when the outbox is idle
         this.scheduleNextPoll(published > 0 ? 0 : IDLE_POLL_MS);
@@ -160,16 +160,27 @@ export class OutboxPublisherWorker implements OnModuleInit, OnModuleDestroy {
         .update({ published_at: new Date() });
       return true;
     } catch (publishErr) {
+      // Same backoff rule as the domain entity (OutboxMessage.retryDelayMs)
       const nextAttempt = row.attempts + 1;
-      const delaySec = Math.min(Math.pow(2, nextAttempt), 60);
+      const delayMs = OutboxMessage.retryDelayMs(nextAttempt);
       await knex('outbox_messages')
         .transacting(knexTx)
         .where({ id: row.id })
         .update({
           attempts: nextAttempt,
-          next_attempt_at: knex.raw(`NOW() + (? || ' seconds')::INTERVAL`, [delaySec.toString()]),
+          next_attempt_at: knex.raw(`NOW() + (? || ' milliseconds')::INTERVAL`, [delayMs.toString()]),
         });
-      this.logger.error(`Failed to publish outbox message ${row.id}: ${publishErr}`);
+      this.logger.error({
+        msg: 'failed to publish outbox message; retry scheduled',
+        outboxMessageId: row.id,
+        eventType: row.event_type,
+        aggregateId: row.aggregate_id,
+        walletId: row.message_group_id,
+        correlationId: row.payload?.correlationId,
+        attempts: nextAttempt,
+        retryInMs: delayMs,
+        error: (publishErr as Error)?.message ?? String(publishErr),
+      });
       return false;
     }
   }

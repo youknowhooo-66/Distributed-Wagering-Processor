@@ -8,10 +8,17 @@ import {
   reconciliationDiscrepancies,
   retryAttemptsTotal,
   transactionDurationMs,
+  transactionsByStatusTotal,
   wagersFailedTotal,
   wagersProcessedTotal,
   wagersRejectedTotal,
 } from './metrics.controller';
+
+const STATUS_BY_OUTCOME: Record<string, string | undefined> = {
+  processed: 'PROCESSED',
+  rejected: 'REJECTED',
+  pending_reference: 'PENDING_REFERENCE',
+};
 
 @Injectable()
 export class PrometheusWageringMetrics extends WageringMetrics {
@@ -21,6 +28,8 @@ export class PrometheusWageringMetrics extends WageringMetrics {
     durationMs: number,
     failureCode?: string,
   ): void {
+    const status = STATUS_BY_OUTCOME[outcome];
+    if (status) transactionsByStatusTotal.inc({ kind, status });
     if (outcome === 'processed') wagersProcessedTotal.inc({ kind });
     if (outcome === 'rejected') wagersRejectedTotal.inc({ kind, failure_code: failureCode ?? 'UNKNOWN' });
     if (outcome === 'idempotent_replay') idempotentReplaysTotal.inc({ kind });
@@ -29,6 +38,7 @@ export class PrometheusWageringMetrics extends WageringMetrics {
 
   transactionFailed(kind: string): void {
     wagersFailedTotal.inc({ kind });
+    transactionsByStatusTotal.inc({ kind, status: 'FAILED' });
   }
 
   concurrencyConflict(reason: 'lock_timeout' | 'optimistic_lock', willRetry: boolean): void {

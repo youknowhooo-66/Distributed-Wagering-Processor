@@ -104,3 +104,48 @@ describe('Metrics wiring — pending references and reconciliation', () => {
     expect(await value(reconciliationDiscrepancies as any)).toBe(before + 1);
   });
 });
+
+describe('Metrics wiring — transactions by status', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await NestFactory.create(AppModule, { logger: false, abortOnError: false });
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('wagering_transactions_total counts each final status once (replays excluded)', async () => {
+    const { transactionsByStatusTotal } = await import('../../shared/infrastructure/metrics/metrics.controller');
+    const byStatus = async (status: string) =>
+      (await (transactionsByStatusTotal as any).get()).values
+        .filter((v: any) => v.labels.status === status && v.labels.kind === 'BET')
+        .reduce((acc: number, v: any) => acc + v.value, 0);
+
+    const playerId = generateId();
+    const wallet = await app.get(OpenWalletUseCase).execute({ playerId, initialBalance: { amount: '10.00', currency: 'BRL' } });
+    const processWager = app.get(ProcessWagerTransactionUseCase);
+    const bet = (ext: string, amount: string) => ({
+      providerId: 'prov-status-metric',
+      externalTransactionId: ext,
+      idempotencyKey: 'sm:' + ext,
+      playerId,
+      walletId: wallet.id,
+      roundId: 'r',
+      gameId: 'g',
+      kind: WagerTransactionKind.Bet,
+      money: { amount, currency: 'BRL' },
+    });
+
+    const [processedBefore, rejectedBefore] = [await byStatus('PROCESSED'), await byStatus('REJECTED')];
+    const ok = bet('ok-' + generateId(), '5.00');
+    await processWager.execute(ok);
+    await processWager.execute(ok); // replay: not counted again
+    await processWager.execute(bet('ko-' + generateId(), '50.00')); // insufficient balance
+
+    expect(await byStatus('PROCESSED')).toBe(processedBefore + 1);
+    expect(await byStatus('REJECTED')).toBe(rejectedBefore + 1);
+  });
+});

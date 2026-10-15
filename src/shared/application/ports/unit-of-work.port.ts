@@ -30,6 +30,20 @@ export class ConcurrencyConflictError extends Error {
   }
 }
 
+/**
+ * The database cannot be reached or refuses connections right now (connection refused/reset,
+ * pool exhausted, server shutting down). Transient: HTTP 503 + Retry-After, SQS retry with backoff.
+ */
+export class InfrastructureUnavailableError extends Error {
+  constructor(
+    readonly dependency: 'postgresql',
+    cause?: unknown,
+  ) {
+    super(`${dependency} is temporarily unavailable`, { cause });
+    this.name = 'InfrastructureUnavailableError';
+  }
+}
+
 /** A unique constraint or unique index rejected the write. */
 export class UniqueViolationError extends Error {
   constructor(

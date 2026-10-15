@@ -30,6 +30,8 @@ export interface SqsWagerMessageEnvelope {
   messageId: string;
   type: string;
   occurredAt: string;
+  /** Optional; defaults to messageId. Propagated to logs and integration events. */
+  correlationId?: string;
   data: {
     providerId: string;
     externalTransactionId: string;
@@ -79,7 +81,7 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    this.logger.log('SIGTERM received: shutting down SQS consumer gracefully...');
+    this.logger.log({ msg: 'shutting down SQS consumer: finishing in-flight messages', inFlight: this.activeProcessingCount });
     this.isRunning = false;
 
     // Grace period for active messages to finish
@@ -94,7 +96,7 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
       try {
         await this.pollMessages();
       } catch (err) {
-        this.logger.error(`SQS consumer polling error: ${err}`);
+        this.logger.error({ msg: 'SQS consumer polling error', error: (err as Error)?.message ?? String(err) });
         await new Promise((r) => setTimeout(r, 2000));
       }
     }
@@ -137,9 +139,11 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
 
       const groupId = msg.Attributes?.MessageGroupId;
       if (groupId && blockedGroups.has(groupId)) {
-        this.logger.warn(
-          `Deferring message ${msg.MessageId}: an earlier message of group ${groupId} is pending retry`,
-        );
+        this.logger.warn({
+          msg: 'deferring message: an earlier message of the same group is pending retry',
+          messageId: msg.MessageId,
+          walletId: groupId,
+        });
         await this.releaseMessage(msg.ReceiptHandle).catch(() => {});
         continue;
       }
@@ -168,15 +172,17 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
       envelope = JSON.parse(body);
     } catch {
       // Permanent error: Malformed JSON -> send directly to DLQ and remove from main queue
-      this.logger.error(`Permanent error: Malformed JSON in SQS message ${msg.MessageId}`);
+      this.logger.error({ msg: 'permanent error: malformed JSON, sending to DLQ', messageId: msg.MessageId });
       return this.forwardToDlqAndAck(body, receiptHandle, msg.MessageId, undefined, 'MALFORMED_JSON');
     }
 
     const violations = this.contractViolations(envelope);
     if (violations.length > 0) {
-      this.logger.error(
-        `Permanent error: Invalid contract in SQS message ${msg.MessageId}: ${violations.join('; ')}`,
-      );
+      this.logger.error({
+        msg: 'permanent error: invalid contract, sending to DLQ',
+        messageId: msg.MessageId,
+        violations,
+      });
       return this.forwardToDlqAndAck(
         body,
         receiptHandle,
@@ -206,7 +212,8 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
     receiveCount: number,
   ): Promise<boolean> {
     const err = error as Error;
-    this.logger.error(`Failed processing SQS message ${msg.MessageId}: ${err?.message}`);
+    const fields = this.logFields(envelope, msg);
+    this.logger.error({ msg: 'failed processing SQS message', receiveCount, error: err?.message, ...fields });
 
     // Permanent: domain errors (e.g. idempotency conflict) and 4xx (wallet not found,
     // provider/external id collision). Retrying cannot succeed -> DLQ for inspection.
@@ -221,16 +228,14 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
 
     const maxReceives = isContentionError ? MAX_CONTENTION_RECEIVES : MAX_TRANSIENT_RECEIVES;
     if (receiveCount >= maxReceives) {
-      this.logger.error(
-        `Message ${msg.MessageId} exceeded max receives (${receiveCount} >= ${maxReceives}). Forwarding to DLQ.`,
-      );
+      this.logger.error({ msg: 'max receives exceeded: recording FAILED and sending to DLQ', receiveCount, maxReceives, ...fields });
       try {
         await this.processWagerUseCase.recordFailure(
           this.toCommand(envelope),
           FailureCode.PERMANENT_PROCESSING_ERROR,
         );
       } catch (recErr) {
-        this.logger.error(`Failed to record FAILED transaction state: ${(recErr as Error).message}`);
+        this.logger.error({ msg: 'failed to record FAILED transaction', error: (recErr as Error).message, ...fields });
       }
       return this.forwardToDlqAndAck(
         msg.Body!,
@@ -266,6 +271,12 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
     if (typeof env.messageId !== 'string' || env.messageId.trim() === '') {
       violations.push('messageId must be a non-empty string');
     }
+    if (
+      env.correlationId !== undefined &&
+      (typeof env.correlationId !== 'string' || !/^[A-Za-z0-9._:-]{1,128}$/.test(env.correlationId))
+    ) {
+      violations.push('correlationId, when present, must match [A-Za-z0-9._:-]{1,128}');
+    }
     const key = env.data?.idempotencyKey;
     if (typeof key !== 'string' || key.trim() === '' || key.length > MAX_IDEMPOTENCY_KEY_LENGTH) {
       violations.push(`data.idempotencyKey must be a non-empty string up to ${MAX_IDEMPOTENCY_KEY_LENGTH} characters`);
@@ -285,8 +296,22 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
       kind: envelope.data.kind,
       money: envelope.data.money,
       referenceExternalTransactionId: envelope.data.referenceExternalTransactionId,
+      correlationId: envelope.correlationId || envelope.messageId,
       sqsMessageId: envelope.messageId,
       consumerName: this.consumerName,
+    };
+  }
+
+  /** Identifiers only (no amounts or payloads). */
+  private logFields(envelope: SqsWagerMessageEnvelope, msg: Message): Record<string, unknown> {
+    return {
+      correlationId: envelope.correlationId || envelope.messageId,
+      messageId: envelope.messageId,
+      sqsMessageId: msg.MessageId,
+      walletId: envelope.data.walletId,
+      providerId: envelope.data.providerId,
+      externalTransactionId: envelope.data.externalTransactionId,
+      kind: envelope.data.kind,
     };
   }
 
@@ -310,7 +335,7 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
         }),
       );
     } catch (visErr) {
-      this.logger.warn(`Failed to change message visibility: ${(visErr as Error).message}`);
+      this.logger.warn({ msg: 'failed to change message visibility', error: (visErr as Error).message });
     }
   }
 
@@ -339,13 +364,18 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
         }),
       );
     } catch (dlqErr) {
-      this.logger.error(
-        `Failed forwarding message ${messageId} to DLQ; keeping it in the main queue: ${dlqErr}`,
-      );
+      this.logger.error({
+        msg: 'failed forwarding to DLQ; message kept in the main queue',
+        messageId,
+        walletId,
+        reason,
+        error: (dlqErr as Error)?.message ?? String(dlqErr),
+      });
       await this.setVisibility(receiptHandle, 30);
       return false;
     }
     dlqMessagesTotal.inc();
+    this.logger.warn({ msg: 'message moved to DLQ', messageId, walletId, reason });
 
     try {
       await this.sqsClient.send(
@@ -356,7 +386,11 @@ export class SqsWagerConsumer implements OnModuleInit, OnModuleDestroy {
       );
     } catch (deleteErr) {
       // The DLQ copy is deduplicated by MessageDeduplicationId if this message is redelivered
-      this.logger.error(`Failed deleting message ${messageId} from main queue after DLQ: ${deleteErr}`);
+      this.logger.error({
+        msg: 'failed deleting message from main queue after DLQ',
+        messageId,
+        error: (deleteErr as Error)?.message ?? String(deleteErr),
+      });
     }
     return true;
   }

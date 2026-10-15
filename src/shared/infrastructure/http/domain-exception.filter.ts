@@ -8,6 +8,11 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { DomainError } from '../../domain/errors/domain-errors';
+import {
+  ConcurrencyConflictError,
+  InfrastructureUnavailableError,
+} from '../../application/ports/unit-of-work.port';
+import { isDatabaseUnavailable } from '../database/mikro-orm-unit-of-work';
 
 @Catch()
 export class DomainExceptionFilter implements ExceptionFilter {
@@ -63,8 +68,36 @@ export class DomainExceptionFilter implements ExceptionFilter {
       });
     }
 
+    // Transient infrastructure failure: the provider may retry the same request (same key)
+    if (
+      exception instanceof InfrastructureUnavailableError ||
+      exception instanceof ConcurrencyConflictError ||
+      isDatabaseUnavailable(exception)
+    ) {
+      const req = ctx.getRequest<{ id?: unknown }>();
+      this.logger.warn({
+        msg: 'transient infrastructure failure',
+        correlationId: req?.id,
+        error: (exception as Error)?.message,
+      });
+      response.setHeader('Retry-After', '1');
+      return response.status(HttpStatus.SERVICE_UNAVAILABLE).json({
+        statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+        error: 'SERVICE_UNAVAILABLE',
+        message: 'A dependency is temporarily unavailable; retry with the same Idempotency-Key',
+      });
+    }
+
     const err = exception as Error;
-    this.logger.error(`Unhandled internal exception: ${err.message}`, err.stack);
+    const req = ctx.getRequest<{ id?: unknown; method?: string; url?: string }>();
+    this.logger.error({
+      msg: 'unhandled internal exception',
+      correlationId: req?.id,
+      method: req?.method,
+      path: req?.url?.split('?')[0],
+      error: err?.message,
+      stack: err?.stack,
+    });
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',

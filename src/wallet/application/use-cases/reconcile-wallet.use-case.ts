@@ -46,15 +46,18 @@ export class ReconcileWalletUseCase {
 
     if (!isConsistent) {
       this.metrics.reconciliationDiscrepancy();
-      this.logger.error(
-        `[RECONCILIATION_DISCREPANCY] Wallet ${walletId} is INCONSISTENT! ` +
-        `Currency: ${storedMoney.currency}, Entries checked: ${checkedEntries}, ` +
-        `Balance difference: ${diffMoney.amount}, Ledger/transaction mismatches: ${transactionMismatches}`,
-      );
+      // Never corrected automatically: logged, counted and returned for investigation
+      this.logger.error({
+        msg: 'RECONCILIATION_DISCREPANCY: stored balance and ledger disagree',
+        walletId,
+        correlationId: walletId,
+        currency: storedMoney.currency,
+        checkedEntries,
+        difference: diffMoney.amount,
+        transactionMismatches,
+      });
     } else {
-      this.logger.log(
-        `[RECONCILIATION_OK] Wallet ${walletId} verified against ${checkedEntries} ledger entries.`,
-      );
+      this.logger.log({ msg: 'RECONCILIATION_OK', walletId, correlationId: walletId, checkedEntries });
     }
 
     return {
