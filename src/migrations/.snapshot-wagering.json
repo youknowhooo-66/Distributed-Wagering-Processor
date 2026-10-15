@@ -768,7 +768,7 @@
         },
         {
           "name": "chk_wager_reference_required",
-          "columnName": "kind",
+          "columnName": "reference_external_transaction_id",
           "definition": "CHECK ((((kind)::text <> ALL ((ARRAY['REFUND'::character varying, 'ROLLBACK'::character varying])::text[])) OR (reference_external_transaction_id IS NOT NULL)))",
           "expression": "(kind <> ALL (ARRAY['REFUND'::character varying, 'ROLLBACK'::character varying][])) OR (reference_external_transaction_id IS NOT NULL)"
         }
@@ -939,6 +939,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "wallet_version": {
+          "name": "wallet_version",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
         }
       },
       "name": "wallet_ledger_entries",
@@ -968,6 +984,17 @@
         },
         {
           "columnNames": [
+            "wallet_id",
+            "wallet_version"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "uq_ledger_wallet_version",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
             "id"
           ],
           "composite": false,
@@ -986,15 +1013,21 @@
         },
         {
           "name": "chk_ledger_arithmetic",
-          "columnName": "direction",
+          "columnName": "balance_before",
           "definition": "CHECK (((((direction)::text = 'DEBIT'::text) AND (balance_after = (balance_before - amount))) OR (((direction)::text = 'CREDIT'::text) AND (balance_after = (balance_before + amount)))))",
           "expression": "((direction = 'DEBIT'::text) AND balance_after = (balance_before - amount))) OR (((direction = 'CREDIT'::text) AND (balance_after = (balance_before + amount)))"
         },
         {
           "name": "chk_ledger_balance_non_negative",
-          "columnName": "balance_after",
+          "columnName": "balance_before",
           "definition": "CHECK (((balance_before >= (0)::numeric) AND (balance_after >= (0)::numeric)))",
           "expression": "balance_before >= (0) AND balance_after >= (0)"
+        },
+        {
+          "name": "chk_ledger_wallet_version_positive",
+          "columnName": "wallet_version",
+          "definition": "CHECK ((wallet_version >= 1))",
+          "expression": "wallet_version >= 1"
         }
       ],
       "foreignKeys": {

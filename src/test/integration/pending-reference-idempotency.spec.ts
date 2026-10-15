@@ -33,13 +33,15 @@ describe('Idempotency — PENDING_REFERENCE resend with divergent payload', () =
   });
 
   afterAll(async () => {
-    // The 'not-yet-arrived' references never resolve: remove them so they do not
-    // occupy the global pending-reference worker batch in later tests
+    // The 'not-yet-arrived' references never resolve: close them (transactions are never
+    // deleted) so they do not occupy the global pending-reference worker batch in later tests
     await orm.em
       .fork()
       .getConnection()
       .execute(
-        "DELETE FROM wager_transactions WHERE provider_id = 'provider-idem' AND status = 'PENDING_REFERENCE'",
+        `UPDATE wager_transactions
+            SET status = 'REJECTED', failure_code = 'REFERENCE_TIMEOUT', processed_at = NOW()
+          WHERE provider_id = 'provider-idem' AND status = 'PENDING_REFERENCE'`,
       );
     await orm.close();
   });

@@ -2,6 +2,8 @@ import { Entity, PrimaryKey, Property, Unique, Check, Index } from '@mikro-orm/c
 
 @Entity({ tableName: 'wallet_ledger_entries' })
 @Unique({ properties: ['walletId', 'transactionId'], name: 'uq_ledger_transaction' })
+@Unique({ properties: ['walletId', 'walletVersion'], name: 'uq_ledger_wallet_version' })
+@Check({ expression: 'wallet_version >= 1', name: 'chk_ledger_wallet_version_positive' })
 @Check({ expression: "direction IN ('DEBIT', 'CREDIT')", name: 'chk_ledger_direction' })
 @Check({ expression: 'amount > 0', name: 'chk_ledger_amount_positive' })
 @Check({ expression: 'balance_before >= 0 AND balance_after >= 0', name: 'chk_ledger_balance_non_negative' })
@@ -34,6 +36,10 @@ export class WalletLedgerEntryMikroEntity {
 
   @Property({ type: 'decimal', precision: 19, scale: 2 })
   balanceAfter!: string;
+
+  /** Wallet version produced by this entry: gap-free per wallet, used as the ledger cursor. */
+  @Property({ type: 'integer' })
+  walletVersion!: number;
 
   @Property({ type: 'timestamptz' })
   createdAt!: Date;

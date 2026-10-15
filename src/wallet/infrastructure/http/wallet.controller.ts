@@ -11,9 +11,13 @@ import {
 } from '@nestjs/common';
 import { OpenWalletUseCase } from '../../application/use-cases/open-wallet.use-case';
 import { GetWalletUseCase } from '../../application/use-cases/get-wallet.use-case';
-import { GetWalletLedgerUseCase } from '../../application/use-cases/get-wallet-ledger.use-case';
+import {
+  GetWalletLedgerUseCase,
+  parseLedgerLimit,
+} from '../../application/use-cases/get-wallet-ledger.use-case';
 import { ReconcileWalletUseCase } from '../../application/use-cases/reconcile-wallet.use-case';
 import { NoopAuthGuard } from '../../../shared/application/ports/auth.guard';
+import { parseUuidParam } from '../../../shared/application/request-validation';
 import { MoneyProps } from '../../../shared/domain/value-objects';
 
 export interface CreateWalletBody {
@@ -39,22 +43,25 @@ export class WalletController {
 
   @Get(':walletId')
   async getWallet(@Param('walletId') walletId: string) {
-    return this.getWalletUseCase.execute(walletId);
+    return this.getWalletUseCase.execute(parseUuidParam(walletId, 'walletId'));
   }
 
   @Get(':walletId/ledger')
   async getLedger(
     @Param('walletId') walletId: string,
     @Query('cursor') cursor?: string,
-    @Query('limit') limitStr?: string,
+    @Query('limit') limit?: string,
   ) {
-    const limit = limitStr ? parseInt(limitStr, 10) : 50;
-    return this.getWalletLedgerUseCase.execute(walletId, limit, cursor);
+    return this.getWalletLedgerUseCase.execute(
+      parseUuidParam(walletId, 'walletId'),
+      parseLedgerLimit(limit),
+      cursor || undefined,
+    );
   }
 
   @Post(':walletId/reconciliation')
   @HttpCode(HttpStatus.OK)
   async reconcile(@Param('walletId') walletId: string) {
-    return this.reconcileWalletUseCase.execute(walletId);
+    return this.reconcileWalletUseCase.execute(parseUuidParam(walletId, 'walletId'));
   }
 }

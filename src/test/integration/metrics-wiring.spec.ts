@@ -92,11 +92,12 @@ describe('Metrics wiring — pending references and reconciliation', () => {
       playerId: generateId(),
       initialBalance: { amount: '50.00', currency: 'BRL' },
     });
-    // Drift the stored balance away from the ledger
-    await orm.em
-      .fork()
-      .getConnection()
-      .execute('UPDATE wallets SET balance_amount = 51.00 WHERE id = ?', [wallet.id]);
+    // Drift the stored balance away from the ledger. PostgreSQL refuses this (balance change
+    // without ledger entry), so the drift is simulated as a privileged change bypassing triggers.
+    await orm.em.fork().transactional(async (em) => {
+      await em.execute('SET LOCAL session_replication_role = replica');
+      await em.execute('UPDATE wallets SET balance_amount = 51.00 WHERE id = ?', [wallet.id]);
+    });
 
     const before = await value(reconciliationDiscrepancies as any);
     const result = await app.get(ReconcileWalletUseCase).execute(wallet.id);

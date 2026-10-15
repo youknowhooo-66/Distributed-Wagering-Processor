@@ -67,9 +67,11 @@ describe('Reconciliation — balance x ledger x transactions', () => {
     );
     await em.execute(
       `INSERT INTO wallet_ledger_entries
-         (id, wallet_id, transaction_id, direction, amount, currency, balance_before, balance_after, created_at)
-       VALUES (?, ?, ?, 'CREDIT', 500.00, 'BRL', 110.00, 610.00, NOW())`,
-      [generateId(), walletId, driftTxId],
+         (id, wallet_id, transaction_id, direction, amount, currency, balance_before, balance_after,
+          wallet_version, created_at)
+       VALUES (?, ?, ?, 'CREDIT', 500.00, 'BRL', 110.00, 610.00,
+               (SELECT version + 1 FROM wallets WHERE id = ?), NOW())`,
+      [generateId(), walletId, driftTxId, walletId],
     );
     await em.execute('UPDATE wallets SET balance_amount = 610.00, version = version + 1 WHERE id = ?', [walletId]);
   }

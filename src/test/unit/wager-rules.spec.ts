@@ -155,6 +155,7 @@ describe('settle (section 7 table)', () => {
     if (!result.applied) return;
     expect(result.entry?.direction).toBe(LedgerDirection.Debit);
     expect(result.entry?.balanceAfter.amount).toBe('75.00');
+    expect(result.entry?.walletVersion).toBe(4);
     expect(w.balance.amount).toBe('75.00');
     expect(w.version).toBe(4);
   });

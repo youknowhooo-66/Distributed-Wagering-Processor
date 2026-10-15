@@ -1,8 +1,12 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, Logger } from '@nestjs/common';
 import { Money, MoneyProps } from '../../../shared/domain/value-objects';
 import { Wallet } from '../../domain/wallet.entity';
-import { WalletLedgerEntry, LedgerDirection } from '../../domain/wallet-ledger-entry.entity';
-import { UnitOfWork } from '../../../shared/application/ports/unit-of-work.port';
+import {
+  type TransactionScope,
+  UnitOfWork,
+  UniqueViolationError,
+} from '../../../shared/application/ports/unit-of-work.port';
+import { UUID_PATTERN, invalidPayload } from '../../../shared/application/request-validation';
 import {
   WagerTransaction,
   WagerTransactionKind,
@@ -24,90 +28,121 @@ export interface WalletDto {
   version: number;
 }
 
+const UQ_WALLET_PLAYER_CURRENCY = 'uq_wallets_player_currency';
+
+/** Contract of POST /wallets (money format itself is validated by Money.from -> 400). */
+export function validateOpenWalletCommand(input: unknown): string[] {
+  if (!input || typeof input !== 'object') return ['payload must be an object'];
+  const data = input as Record<string, unknown>;
+  const errors: string[] = [];
+  if (typeof data.playerId !== 'string' || !UUID_PATTERN.test(data.playerId)) {
+    errors.push('playerId must be a UUID');
+  }
+  const balance = data.initialBalance as Record<string, unknown> | undefined;
+  if (!balance || typeof balance !== 'object') {
+    errors.push('initialBalance must be an object with amount and currency');
+  } else {
+    if (typeof balance.amount !== 'string' || !/^\d{1,17}\.\d{2}$/.test(balance.amount)) {
+      errors.push('initialBalance.amount must be a non-negative decimal string with 2 decimal places, e.g. "100.00"');
+    }
+    if (typeof balance.currency !== 'string' || !/^[A-Z]{3}$/.test(balance.currency)) {
+      errors.push('initialBalance.currency must be an ISO-4217 code, e.g. "BRL"');
+    }
+  }
+  return errors;
+}
+
 @Injectable()
 export class OpenWalletUseCase {
+  private readonly logger = new Logger(OpenWalletUseCase.name);
+
   constructor(private readonly uow: UnitOfWork) {}
 
-  async execute(cmd: OpenWalletCommand): Promise<WalletDto> {
+  async execute(input: OpenWalletCommand): Promise<WalletDto> {
+    const violations = validateOpenWalletCommand(input);
+    if (violations.length > 0) throw invalidPayload(violations);
+
+    const cmd = { ...input, playerId: input.playerId.toLowerCase() };
     const initialMoney = Money.from(cmd.initialBalance);
 
-    return this.uow.transactional(async (scope) => {
-      const { wallets: walletRepo, wagers: wagerRepo } = scope;
-
-      // Check if wallet already exists for (playerId, currency)
-      const existing = await walletRepo.findByPlayerIdAndCurrency(
-        cmd.playerId,
-        initialMoney.currency,
-      );
-      if (existing) {
-        throw new ConflictException(
-          `Wallet already exists for playerId ${cmd.playerId} with currency ${initialMoney.currency}`,
-        );
+    try {
+      const dto = await this.uow.transactional((scope) => this.open(scope, cmd, initialMoney));
+      this.logger.log({ msg: 'wallet opened', walletId: dto.id, correlationId: dto.id });
+      return dto;
+    } catch (err) {
+      // Two concurrent requests for the same (playerId, currency): the loser is a conflict too
+      if (err instanceof UniqueViolationError && err.constraint === UQ_WALLET_PLAYER_CURRENCY) {
+        throw this.conflict(cmd.playerId, initialMoney.currency);
       }
+      throw err;
+    }
+  }
 
-      const walletId = generateId();
-      const now = new Date();
-      const wallet = Wallet.open({
-        id: walletId,
-        playerId: cmd.playerId,
-        currency: initialMoney.currency,
-        createdAt: now,
-        initialBalance: initialMoney,
-      });
+  private async open(
+    scope: TransactionScope,
+    cmd: OpenWalletCommand,
+    initialMoney: Money,
+  ): Promise<WalletDto> {
+    const { wallets: walletRepo, wagers: wagerRepo } = scope;
 
-      await walletRepo.save(wallet);
-      await scope.flush(); // Ensure wallet row is inserted first for foreign keys
+    const existing = await walletRepo.findByPlayerIdAndCurrency(cmd.playerId, initialMoney.currency);
+    if (existing) {
+      throw this.conflict(cmd.playerId, initialMoney.currency);
+    }
 
-      if (!initialMoney.isZero()) {
-        const txId = generateId();
-        const idempotencyKey = `internal:opening:${walletId}`;
-        const openingTx = WagerTransaction.create({
-          id: txId,
-          providerId: 'system',
-          externalTransactionId: `opening-${walletId}`,
-          idempotencyKey,
-          payloadHash: computePayloadHash({ walletId, initialBalance: cmd.initialBalance }),
-          walletId: wallet.id,
-          playerId: wallet.playerId,
-          roundId: 'system-opening',
-          gameId: 'system',
-          kind: WagerTransactionKind.Opening,
-          money: initialMoney,
-          createdAt: now,
-        });
+    const walletId = generateId();
+    const now = new Date();
+    const wallet = Wallet.open({
+      id: walletId,
+      playerId: cmd.playerId,
+      currency: initialMoney.currency,
+      createdAt: now,
+      initialBalance: initialMoney,
+    });
 
-        openingTx.markProcessed(undefined, now, initialMoney);
+    await walletRepo.save(wallet);
+    await scope.flush(); // wallet row first: ledger and transaction reference it
 
-        const ledgerEntry = WalletLedgerEntry.create({
-          id: generateId(),
-          walletId: wallet.id,
-          transactionId: txId,
-          direction: LedgerDirection.Credit,
-          money: initialMoney,
-          balanceBefore: Money.zero(initialMoney.currency),
-          balanceAfter: initialMoney,
-          createdAt: now,
-        });
-
-        await walletRepo.save(wallet);
-        await walletRepo.saveLedgerEntry(ledgerEntry);
-        await wagerRepo.save(openingTx);
-
-        // Integration event
-        const balanceEvent = WalletBalanceChanged.from(wallet, ledgerEntry, {
-          correlationId: txId,
-        });
-        await wagerRepo.saveOutboxMessage(OutboxMessage.enqueue(balanceEvent));
-      } else {
-        await walletRepo.save(wallet);
-      }
-
-      return {
-        id: wallet.id,
+    if (initialMoney.isPositive()) {
+      // Internal OPENING transaction + CREDIT entry, in this same SQL transaction
+      const txId = generateId();
+      const openingTx = WagerTransaction.create({
+        id: txId,
+        providerId: 'system',
+        externalTransactionId: `opening-${walletId}`,
+        idempotencyKey: `internal:opening:${walletId}`,
+        payloadHash: computePayloadHash({ walletId, initialBalance: cmd.initialBalance }),
+        walletId: wallet.id,
         playerId: wallet.playerId,
-        balance: wallet.balance.toJSON(),
-        version: wallet.version,
-      };
+        roundId: 'system-opening',
+        gameId: 'system',
+        kind: WagerTransactionKind.Opening,
+        money: initialMoney,
+        createdAt: now,
+      });
+      openingTx.markProcessed(undefined, now, initialMoney);
+
+      const ledgerEntry = wallet.openingEntry(txId);
+      await walletRepo.saveLedgerEntry(ledgerEntry);
+      await wagerRepo.save(openingTx);
+
+      const balanceEvent = WalletBalanceChanged.from(wallet, ledgerEntry, { correlationId: txId });
+      await wagerRepo.saveOutboxMessage(OutboxMessage.enqueue(balanceEvent));
+    }
+
+    return {
+      id: wallet.id,
+      playerId: wallet.playerId,
+      balance: wallet.balance.toJSON(),
+      version: wallet.version,
+    };
+  }
+
+  private conflict(playerId: string, currency: string): ConflictException {
+    return new ConflictException({
+      statusCode: 409,
+      error: 'WALLET_ALREADY_EXISTS',
+      message: `Wallet already exists for playerId ${playerId} with currency ${currency}`,
     });
   }
 }
