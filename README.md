@@ -15,7 +15,7 @@ Serviço financeiro distribuído de alta performance para processamento de trans
 | **ORM** | MikroORM 6 | Unit of Work explícito, lock por linha (`FOR UPDATE`) e coluna `version` |
 | **Mensageria** | AWS SQS FIFO (LocalStack) | Content-based deduplication, message groups e DLQ |
 | **Orquestração Local** | Docker Compose | Migração one-shot, 3 instâncias de app, PostgreSQL e LocalStack |
-| **Log Estruturado** | Pino / nestjs-pino | Logs em JSON com correlationId e sem dados sensíveis |
+| **Log Estruturado** | Pino / nestjs-pino | Logs em JSON com `correlationId`, `messageId`, `transactionId`, `walletId`, `providerId`, sem valores nem payloads |
 
 ---
 
@@ -76,13 +76,13 @@ Os testes rodam contra PostgreSQL e LocalStack reais (pré-requisito: passos 2 e
 # Checagem de tipos (código de produção, testes e scripts)
 bun run typecheck
 
-# Todos os testes (162)
+# Todos os testes (224)
 bun run test
 
-# Unitários (75): Money, Wallet, WagerTransaction, hash canônico, validação de contrato
+# Unitários (116): Money, Wallet, WagerTransaction, regras BET/WIN/LOSS/REFUND/ROLLBACK, hash canônico, contratos
 bun run test:unit
 
-# Integração (77): atomicidade, idempotência, reversões, reconciliação, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP
+# Integração (98): atomicidade, idempotência, reversões, reconciliação, guardas do schema, SQS/DLQ, redrive, outbox, retenção, métricas, HTTP
 bun run test:int
 
 # Concorrência (6): 3 processos disputando a mesma wallet, 50 requisições paralelas
@@ -94,7 +94,9 @@ bun run test:load
 
 Operação: `bun run dlq:redrive --reason <FailureReason> [--execute]` reenvia mensagens selecionadas da DLQ (ver `docs/OPERATIONS_RUNBOOK.md`); o expurgo de outbox/inbox é automático (`OUTBOX_RETENTION_DAYS`, `INBOX_RETENTION_DAYS`); as regras de alerta estão em `infra/prometheus/alerts.yml`.
 
-Carga HTTP contra as 3 réplicas: `bun run load:http` (resultados e leitura do p99 em `docs/TEST_REPORT.md`).
+Carga HTTP contra as 3 réplicas: `bun run load:http` (throughput, p50/p95/p99, taxa de erro, conflitos de lock, outbox lag e tempo de drenagem; resultados em `docs/TEST_REPORT.md`).
+
+Evidências completas (testes, schema, métricas, logs, ciclo de migrations, stack em containers): `bun run scripts/collect-evidence.ts` regenera `docs/evidence/` com a stack do Docker Compose no ar.
 
 O workflow `.github/workflows/ci.yml` executa o typecheck, a verificação da documentação, os testes das regras de alerta (`promtool`), as suítes acima, o ciclo `migration:down`/`migration:up` e, num segundo job, a imagem Docker com 3 réplicas: smoke test entre réplicas e verificação de encerramento gracioso.
 
@@ -128,10 +130,14 @@ curl http://localhost:3000/wallets/0192f291-27dd-7d3f-8071-5f8685deef37
 ```
 
 ### 3. Submeter Aposta (BET)
+
+O header `Idempotency-Key` é **obrigatório** (recomendado: `{providerId}:{externalTransactionId}`). `X-Correlation-Id` é opcional: se ausente, um UUID é gerado; em ambos os casos ele volta no header da resposta e acompanha logs e eventos.
+
 ```bash
 curl -X POST http://localhost:3000/wagering/transactions \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: provider-a:tx-101" \
+  -H "X-Correlation-Id: req-42" \
   -d '{
     "providerId": "provider-a",
     "externalTransactionId": "tx-101",
@@ -163,6 +169,25 @@ curl -X POST http://localhost:3000/wagering/transactions \
 }
 ```
 
+**Regra de negócio violada (422, terminal):**
+```json
+{
+  "transactionId": "01a12447-...",
+  "status": "REJECTED",
+  "balance": { "amount": "20.00", "currency": "BRL" },
+  "idempotentReplay": false,
+  "failureCode": "INSUFFICIENT_BALANCE"
+}
+```
+
+Status por resultado: `200` aplicada · `202` aguardando referência (`PENDING_REFERENCE`) · `400` contrato/header · `404` wallet inexistente · `409` conflito de idempotência · `422` rejeitada por regra · `500` `FAILED` · `503` + `Retry-After` falha transitória (reenviar com a mesma chave). Replays repetem o status original com `idempotentReplay: true`. Códigos de falha e ação esperada do provedor: `ARCHITECTURE.md`, seções 11 e 12.
+
+### Consultar Transação
+```bash
+curl http://localhost:3000/wagering/transactions/01a12447-4cb5-73ec-a408-b15076ea21af
+curl http://localhost:3000/providers/provider-a/wagering/transactions/tx-101
+```
+
 ### 4. Consultar Ledger com Paginação por Cursor
 ```bash
 curl "http://localhost:3000/wallets/0192f291-27dd-7d3f-8071-5f8685deef37/ledger?limit=10"
@@ -178,12 +203,15 @@ curl "http://localhost:3000/wallets/0192f291-27dd-7d3f-8071-5f8685deef37/ledger?
       "money": { "amount": "25.00", "currency": "BRL" },
       "balanceBefore": { "amount": "1000.00", "currency": "BRL" },
       "balanceAfter": { "amount": "975.00", "currency": "BRL" },
+      "walletVersion": 2,
       "createdAt": "2026-10-10T05:20:00.000Z"
     }
   ],
-  "nextCursor": "MjAyNi0xMC0xMFQwNToyMDowMC4wMDBafDAxYTEyNDQ3..."
+  "nextCursor": "djE6Mg"
 }
 ```
+
+Do mais novo para o mais antigo. `limit` entre 1 e 200 (padrão 50); `cursor` é opaco e estável (baseado em `walletVersion`, sequência sem lacunas por wallet): as páginas não pulam nem repetem lançamentos enquanto novas movimentações chegam. Valores inválidos → `400 INVALID_LIMIT` / `INVALID_CURSOR`.
 
 ### 5. Reconciliação Financeira
 ```bash
@@ -203,10 +231,21 @@ curl -X POST http://localhost:3000/wallets/0192f291-27dd-7d3f-8071-5f8685deef37/
 }
 ```
 
-`consistent` exige saldo = soma do ledger **e** cada lançamento coerente com a transação que o originou (`transactionMismatches = 0`).
+`consistent` exige saldo = soma do ledger **e** cada lançamento coerente com a transação que o originou (`transactionMismatches = 0`). O PostgreSQL já impede essas divergências no commit (`ARCHITECTURE.md`, seção 5); a reconciliação detecta as que vierem de escritas privilegiadas que desligam gatilhos. Divergência nunca é corrigida automaticamente: é logada, contada em `wagering_reconciliation_discrepancies_total` e devolvida com `consistent: false`.
 
-### 6. Health Checks (Abertos, sem autenticação)
+### 6. Health Checks e Métricas (Abertos, sem autenticação)
 ```bash
-curl http://localhost:3000/health/live
-curl http://localhost:3000/health/ready
+curl http://localhost:3000/health/live    # processo vivo
+curl http://localhost:3000/health/ready   # PostgreSQL e SQS alcançáveis (503 se não)
+curl http://localhost:3000/metrics        # Prometheus
 ```
+
+### 7. Fila SQS
+Mensagens em `wager-transactions.fifo` usam o envelope do enunciado (`messageId`, `type`, `occurredAt`, `data` com `idempotencyKey`; `correlationId` opcional) e passam pelo **mesmo caso de uso** da API. Deduplicação persistente por `(consumerName, messageId)` na tabela `inbox_messages`, ack só após o commit, DLQ `wager-transactions-dlq.fifo` com o motivo em `FailureReason`.
+
+---
+
+## 📚 Documentação
+
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): decisões, trade-offs e limitações.
+- [`docs/README.md`](docs/README.md): índice (ADRs, rastreabilidade com o enunciado, relatório de testes, runbook).

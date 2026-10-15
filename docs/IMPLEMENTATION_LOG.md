@@ -112,3 +112,19 @@ Escopo: Construção incremental e correções P0/P1/P2
 - **Ledger × transações imposto pelo banco**: gatilhos de restrição diferidos recusam no commit um lançamento divergente da transação e uma transação processada sem lançamento — a classe do bug P0-B deixa de poder ser gravada. Custo medido: 5–8% no p99 do teste de carga no processo (A/B com os gatilhos ligados e desligados).
 - **Índice ausente**: `wager_transactions.wallet_id` não tinha índice; a reconciliação varria a tabela inteira com consulta paralela e esgotou a memória compartilhada do container (erro `53100`) sob testes concorrentes. Com o índice e o filtro por wallet: 0,1 ms. Postgres no compose com `shm_size: 256mb`.
 - **Publisher do outbox**: grupos publicados em paralelo (ordem preservada dentro do grupo) e novo ciclo imediato enquanto houver trabalho; drenagem ~1,7× mais rápida. Na máquina local, com todos os serviços na mesma CPU, a drenagem contínua disputa CPU com as requisições durante carga máxima; em produção, publisher e API podem rodar em réplicas separadas.
+
+---
+
+## Revisão de Entrega (15/10/2026)
+
+Revisão contra o enunciado com a suíte executada (detalhes e motivos em `docs/GAP_ANALYSIS.md`, seção 2).
+
+- **Domínio:** regras da seção 7 extraídas para `src/wagering/domain/wager-rules.ts` (`checkReference`, `settle`, `checkWalletOwnership`); o teste de unidade que validava uma cópia da regra foi substituído por testes do código real.
+- **Referências fora de ordem:** reversão cuja referência existe mas ainda aguarda passa a aguardar também (cadeias ROLLBACK → REFUND → BET resolvem); reenvio idêntico de transação em espera é replay sem efeito colateral; mensagem SQS em espera é registrada na inbox.
+- **Titularidade:** `WALLET_PLAYER_MISMATCH` quando a wallet não pertence ao `playerId`.
+- **Schema:** `wallet_version` nos lançamentos e gatilhos diferidos que pareiam saldo e ledger; guarda de `wager_transactions` (terminal imutável, colunas de negócio imutáveis, sem DELETE); `TRUNCATE` bloqueado (ADR-006).
+- **HTTP:** `Idempotency-Key` obrigatório; `X-Correlation-Id` gerado/propagado até os eventos; `POST /wallets` validado e corrida → 409; IDs de rota, `limit` e cursor validados (400); cursor do ledger por `wallet_version`; `FAILED` → 500; PostgreSQL inalcançável → 503 + `Retry-After`.
+- **Observabilidade:** todos os logs de aplicação estruturados com os identificadores exigidos; contador `wagering_transactions_total{status}`.
+- **Operação:** healthcheck do LocalStack espera as filas; `load:http` mede conflitos, retries, outbox lag e drenagem.
+- **Documentação:** rastreabilidade refeita contra o enunciado; `ARCHITECTURE.md` único (a cópia em `docs/` e o `AUDIT_REPORT.md` desatualizados foram removidos); taxonomia de falhas com a ação esperada do provedor.
+

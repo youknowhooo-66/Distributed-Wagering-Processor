@@ -47,33 +47,23 @@ Todas as métricas operacionais expostas utilizam o prefixo `wagering_`:
 | `wagering_optimistic_lock_conflicts_total` | Counter | Total de colisões de versão detectadas sob concorrência. |
 | `wagering_retry_attempts_total{type}` | Counter | Retentativas executadas (`optimistic_lock`/`lock_timeout` no caso de uso; `lock_contention`/`sqs_transient_error` no consumer SQS). |
 | `wagering_dlq_messages_total` | Counter | Mensagens encaminhadas para a Dead Letter Queue. |
+| `wagering_transactions_total{kind,status}` | Counter | Transações por status resultante (`PROCESSED`, `REJECTED`, `PENDING_REFERENCE`, `FAILED`), sem replays. |
 | `wagering_transaction_processing_duration_ms` | Histogram | Latência fim-a-fim da operação por tipo de aposta. |
 | `wagering_outbox_pending_messages` | Gauge | Quantidade de mensagens pendentes na outbox. |
 | `wagering_outbox_lag_seconds` | Gauge | Idade em segundos da mensagem não publicada mais antiga. |
 
 ---
 
-## 3. Catálogo Completo de Códigos de Falha de Domínio (`FailureCode`)
+## 3. Catálogo de Códigos de Falha (`FailureCode`)
 
-Confira a lista exata presente no enum `src/shared/domain/errors/failure-codes.ts`:
+Lista exata no enum `src/shared/domain/errors/failure-codes.ts`. A tabela completa, com status HTTP e ação esperada do provedor, está em `ARCHITECTURE.md` §11. Resumo para triagem:
 
-- `INSUFFICIENT_BALANCE`: Saldo insuficiente para efetuar o débito da aposta.
-- `REVERSAL_WOULD_CAUSE_NEGATIVE_BALANCE`: Reversão de ganho anterior causaria saldo negativo na carteira.
-- `REFERENCE_NOT_FOUND`: Transação referenciada não foi encontrada no sistema.
-- `REFERENCE_TIMEOUT`: Tempo limite esgotado para resolução de transação adiantada.
-- `REFERENCE_NOT_PROCESSED`: Transação referenciada ainda não se encontra no estado `PROCESSED`.
-- `REFERENCE_ALREADY_REVERSED`: A transação referenciada já possui uma reversão processada no sistema.
-- `INVALID_REFERENCE_KIND`: Operação incompatível com o tipo de reversão solicitado.
-- `CURRENCY_MISMATCH`: Moeda informada difere da moeda da carteira ou da transação original.
-- `REVERSAL_AMOUNT_MISMATCH`: Valor da reversão difere do valor da aposta referenciada.
-- `CROSS_PROVIDER_REFERENCE`: A transação referenciada pertence a outro provedor de jogos.
-- `CROSS_PLAYER_REFERENCE`: A transação referenciada pertence a outro jogador.
-- `CROSS_WALLET_REFERENCE`: A transação referenciada pertence a outra carteira.
-- `CROSS_ROUND_REFERENCE`: A transação referenciada pertence a outra rodada de jogo.
-- `WALLET_NOT_FOUND`: Carteira informada não existe no banco de dados.
-- `INVALID_TRANSACTION_KIND`: Tipo de transação inválido para submissão direta (ex.: `OPENING`).
-- `IDEMPOTENCY_CONFLICT`: Idempotency-Key reutilizada com payload divergente do original.
-- `PERMANENT_PROCESSING_ERROR`: Falha irrecuperável de infraestrutura ou formato.
+- **Saldo:** `INSUFFICIENT_BALANCE` (BET sem saldo), `REVERSAL_INSUFFICIENT_BALANCE` (ROLLBACK de WIN/REFUND deixaria saldo negativo; escalar, não é erro do jogador).
+- **Referência:** `REFERENCE_TIMEOUT` (não chegou em 10 tentativas), `REFERENCE_NOT_PROCESSED` (referência terminou `REJECTED`/`FAILED`), `REFERENCE_ALREADY_REVERSED`, `INVALID_REFERENCE_KIND`, `REVERSAL_AMOUNT_MISMATCH`, `CROSS_PROVIDER_REFERENCE`, `CROSS_PLAYER_REFERENCE`, `CROSS_WALLET_REFERENCE`, `CROSS_ROUND_REFERENCE`.
+- **Contexto:** `CURRENCY_MISMATCH`, `WALLET_PLAYER_MISMATCH` (wallet de outro jogador).
+- **Infraestrutura:** `PERMANENT_PROCESSING_ERROR` (transação `FAILED` pelo consumer; a mensagem está na DLQ com `FailureReason=MAX_*_RECEIVES`).
+
+Para investigar uma transação: filtrar os logs por `correlationId` (header `X-Correlation-Id` devolvido ao provedor, ou `messageId` da fila). Todas as linhas daquela requisição, inclusive os eventos da outbox (`payload.correlationId`), carregam o mesmo valor.
 
 ---
 

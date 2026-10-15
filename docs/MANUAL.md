@@ -18,11 +18,11 @@ docker compose up -d --wait postgres localstack
 # 2. Executar migrações do banco
 bun run migration:up
 
-# 3. Executar suíte completa de testes (162 testes: 75 unit + 77 integração + 6 concorrência + 4 carga)
+# 3. Executar suíte completa de testes (224 testes: 116 unit + 98 integração + 6 concorrência + 4 carga)
 # Os scripts de teste definem ENABLE_BACKGROUND_POLL=false automaticamente
 bun run typecheck    # tipos de produção, testes e scripts
-bun run test:unit    # 75 testes — domínio puro e validação de contrato, sem I/O
-bun run test:int     # 77 testes — PostgreSQL + LocalStack SQS reais
+bun run test:unit    # 116 testes — domínio puro (regras da seção 7) e contratos, sem I/O
+bun run test:int     # 98 testes — PostgreSQL + LocalStack SQS reais
 bun run test:e2e     # 6 testes  — paralelismo real multi-processo
 bun run test:load    # 4 testes  — 50 BETs concorrentes, invariantes de saldo
 
@@ -40,7 +40,7 @@ bun run dev
 | `SQS_ENDPOINT` | — | Endpoint do SQS (LocalStack em dev: `http://localhost:4566`). |
 | `DB_POOL_MAX` | `10` | Conexões por instância. Medido: 20 reduz o p99 do tráfego distribuído em ~10%, mas piora a hot wallet em ~40% (mais backends na fila do mesmo lock de linha). Some as instâncias e mantenha abaixo de `max_connections`. |
 | `DB_LOCK_TIMEOUT_MS` | `5000ms` | Espera máxima pelo lock da wallet (parâmetro de sessão da conexão). Timeout vira retry e, esgotado, 503. |
-| `LOG_LEVEL` | `info` | Nível do logger. O log de acesso HTTP registra só falhas (4xx `warn`, 5xx `error`). |
+| `LOG_LEVEL` | `info` | Nível do logger. O log de acesso HTTP registra só falhas (4xx `warn`, 5xx `error`); cada transação gera uma linha estruturada (`warn` em carga muito alta mantém só os desvios). |
 
 Copie `.env.example` para `.env` e ajuste os valores para o seu ambiente.
 
@@ -59,6 +59,7 @@ flowchart TD
         UC -->|2. Check Balance & Version| WalletRepo[(wallets)]
         UC -->|3. Append Immutably| LedgerRepo[(wallet_ledger_entries)]
         UC -->|4. Trigger Enforces No UPDATE/DELETE| LedgerTrig{{trg_prevent_ledger_mutation}}
+        LedgerRepo -.->|commit: saldo ↔ lançamento pareados por versão| WalletRepo
         UC -->|5. Enqueue Outbox Event| OutboxRepo[(outbox_messages)]
     end
 
@@ -74,16 +75,16 @@ flowchart TD
 ## 3. Fluxo de Execução de uma Aposta (`BET`)
 
 1. **Idempotency & Deduplicação**:
-   - O cliente envia `Idempotency-Key` e corpo JSON com `providerId` e `externalTransactionId`.
+   - O cliente envia `Idempotency-Key` (obrigatório; sem ele, 400) e corpo JSON com `providerId` e `externalTransactionId`.
    - O processador calcula o hash canônico SHA-256 (`payload_hash`).
    - Se já existe registro no banco com a mesma chave:
      - Se o payload é idêntico: retorna resposta original gravada com saldo histórico (`balance_after`).
      - Se o payload difere: retorna HTTP 409 (`IdempotencyConflictError`).
-2. **Mutação Otimista & Ledger**:
-   - Carrega o agregado `Wallet` e valida moeda e saldo.
-   - Aplica débito no domínio e incrementa `version`.
-   - Grava entrada no `wallet_ledger_entries` com `direction: DEBIT`, calculando `balance_before` e `balance_after`.
-   - Se duas requisições concorrentes tentarem atualizar a mesma versão de `Wallet`, o PostgreSQL/MikroORM dispara `OptimisticLockError`. O use-case aplica retentativas com jitter exponencial (até 6 tentativas). Se esgotar, retorna HTTP 503 com cabeçalho `Retry-After: 1`.
+2. **Lock da Wallet & Ledger**:
+   - Trava a linha da wallet (`SELECT ... FOR UPDATE`): operações da mesma wallet entram em fila no PostgreSQL; wallets diferentes seguem em paralelo.
+   - Confere titularidade (`playerId`) e moeda; aplica a regra do tipo (`settle` em `wager-rules.ts`): débito só com saldo suficiente.
+   - Grava a entrada em `wallet_ledger_entries` com `balance_before`, `balance_after` e `wallet_version` (versão nova da wallet). No commit, o PostgreSQL confere que saldo e lançamento formam um par.
+   - Lock timeout, deadlock ou conflito de versão geram até 6 tentativas com jitter; esgotadas, HTTP 503 com `Retry-After: 1`.
 3. **Outbox Pattern**:
    - Cria evento de domínio `WalletBalanceChanged` persistido na tabela `outbox_messages` dentro da mesma transação ACID.
    - `OutboxPublisherWorker` publica em `wagering-events.fifo` no SQS em ordem por wallet: um publisher por wallet de cada vez (lock consultivo), parando na primeira mensagem com falha.
@@ -106,7 +107,7 @@ flowchart TD
 
 - **Regras de Negócio e Domínio Puro**:
   - `src/wallet/domain/`: Agregados `Wallet` e `WalletLedgerEntry`. Não adicionar dependências de framework aqui.
-  - `src/wagering/domain/`: Agregado `WagerTransaction` e cálculo de referências.
+  - `src/wagering/domain/`: Agregado `WagerTransaction` e regras da seção 7 (`wager-rules.ts`: validação de referência, aplicação na wallet, titularidade).
   - `src/shared/domain/value-objects/`: Objeto de valor monetário `Money` (usando `Decimal.js`).
 - **Casos de Uso**:
   - `src/wagering/application/use-cases/process-wager-transaction.use-case.ts`: Orquestração transacional de apostas.

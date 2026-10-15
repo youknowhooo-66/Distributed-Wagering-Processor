@@ -1,50 +1,150 @@
-# Matriz de Rastreabilidade Completa de Requisitos (Original Challenge Specs)
+# Rastreabilidade: Enunciado → Código → Teste
 
-Data da Auditoria: 11/10/2026 — revisada em 12/10/2026  
-Escopo: Distributed Wagering Processor (Jungle Gaming)
+Revisada em 15/10/2026. Cada linha cita a exigência do enunciado (seção entre parênteses), onde ela está implementada e qual teste a comprova. Caminhos de teste relativos a `src/test/`.
 
----
-
-## 1. As 9 Restrições Invioláveis (Seção 5 do Desafio)
-
-| # | Restrição Original do Enunciado | Solução de Engenharia | Evidência em Código | Evidência em Execução / Banco | Status |
-| :-: | :--- | :--- | :--- | :--- | :-: |
-| **1** | Múltiplas instâncias simultâneas da aplicação (≥2 réplicas) sem single point of failure ou dependência de afinidade de requisições. | Lock por linha da wallet (`SELECT ... FOR UPDATE`) no PostgreSQL, com `version` como barreira; nenhum estado em memória local. | `../src/wagering/application/use-cases/process-wager-transaction.use-case.ts:L179` | Teste multi-processo com 3 instâncias Bun concorrentes: `../src/test/concurrency/multiprocess-concurrency.spec.ts`. | ✅ VERIFICADO |
-| **2** | PostgreSQL para persistência do estado e Amazon SQS FIFO para mensageria assíncrona. | PostgreSQL 16 + AWS SQS FIFO com deduplicação e grouping. | `../src/shared/infrastructure/database/mikro-orm.config.ts`, `../src/shared/infrastructure/messaging/sqs.client.ts` | Teste de integração do consumidor SQS e publisher SQS FIFO aprovados: `../src/test/integration/sqs-consumer.spec.ts`. | ✅ VERIFICADO |
-| **3** | Precisão monetária arbitrária. Não utilizar tipos de ponto flutuante (`float`/`double`/`number`) para representação de valores monetários. | Objeto de valor `Money` baseado em `Decimal.js` com strings exatas e 2 casas decimais. | `../src/shared/domain/value-objects/money.ts:L15` | Colunas SQL `numeric(19,2)` em todas as tabelas financeiras (`wallets`, `wallet_ledger_entries`, `wager_transactions`). | ✅ VERIFICADO |
-| **4** | O saldo da carteira nunca pode se tornar negativo em nenhuma circunstância. | Validação em memória no agregado `Wallet.debit()` e constraint de integridade no PostgreSQL. | `../src/wallet/domain/wallet.entity.ts:L99` | PostgreSQL: `chk_wallets_balance_non_negative CHECK (balance_amount >= 0)`. Teste concorrente de saldo aprovado. | ✅ VERIFICADO |
-| **5** | O ledger financeiro é estritamente append-only. Nenhuma linha existente do ledger pode sofrer `UPDATE` ou `DELETE`. | Trigger de banco de dados nativa em PL/pgSQL bloqueando qualquer mutação em `wallet_ledger_entries`. | `../src/migrations/Migration20261011000001_ledger_immutability.ts:L6` | Teste em `../src/test/integration/use-cases.spec.ts:L248` aborta com exceção disparada pela trigger. | ✅ VERIFICADO |
-| **6** | Garantia de idempotência estrita para todas as operações de aposta e transações financeiras. | Constraint de chave única em `idempotency_key` e validação de hash canônico SHA-256 em qualquer estado da transação existente, inclusive `PENDING_REFERENCE`. | `../src/wagering/application/use-cases/process-wager-transaction.use-case.ts:L187` | PostgreSQL: `uq_wager_provider_idempotency_key` (chave única por provedor; `../src/test/integration/provider-scoped-idempotency.spec.ts`). Teste de 50 requisições idênticas simultâneas gerando 1 único débito; `../src/test/integration/pending-reference-idempotency.spec.ts` (reenvio com valor/referência diferentes → 409, saldo inalterado). | ✅ VERIFICADO |
-| **7** | Replay idempotente deve retornar o resultado da transação original, incluindo o saldo após o processamento original. | Persistência da coluna `balance_after numeric(19,2)` em cada transação via Migration 3. | `../src/wagering/application/use-cases/process-wager-transaction.use-case.ts:L192` | Teste de replay em `../src/test/integration/use-cases.spec.ts:L274` devolve saldo histórico mesmo após mutações subsequentes. | ✅ VERIFICADO |
-| **8** | Mensageria assíncrona com garantia de ordenação por carteira e desduplicação de mensagens. | Envio via SQS FIFO com `MessageGroupId = walletId` e `MessageDeduplicationId = eventId`; publicação em ordem por wallet com lock consultivo por grupo (ADR-005); consumer não processa mensagens posteriores de um grupo cuja anterior falhou no lote. | `../src/wagering/infrastructure/messaging/outbox-publisher.worker.ts:L94`, `../src/wagering/infrastructure/messaging/sqs-wager.consumer.ts:L139` | Publicação e consumo reais via LocalStack; `../src/test/integration/messaging-ordering.spec.ts` (ordem com falha e com 3 publishers concorrentes). | ✅ VERIFICADO |
-| **9** | Schema de banco relacional e migrações versionadas e reversíveis. | Migrações MikroORM estruturadas com scripts `up()` e `down()`. | `../src/migrations/` (10 migrações ativas) | Teste automatizado de reversibilidade executado via `bun run migration:down` e `bun run migration:up`. | ✅ VERIFICADO |
+Status: ✅ atendido e testado · ✅¹ atendido com interpretação documentada.
 
 ---
 
-## 2. As 8 Áreas da Rubrica de Avaliação (com Pesos)
+## Seção 2 — Autenticação
 
-| Área da Rubrica | Peso | Requisito do Desafio | Implementação / Evidência | Status |
-| :--- | :-: | :--- | :--- | :-: |
-| **1. Arquitetura e DDD** | 20% | Separação em camadas (Domínio, Aplicação, Infraestrutura). Domínio puro sem decorators de framework/ORM. | Agregados puros `Wallet`, `WagerTransaction`, `WalletLedgerEntry` com construtores privados e fábricas; casos de uso dependem só de portas (`UnitOfWork`, repositórios), com erros do banco traduzidos por SQLSTATE no adaptador. | ✅ VERIFICADO |
-| **2. Concorrência e Transações** | 20% | Múltiplas transações simultâneas sem inconsistência, sem deadlocks e sem perda de atualizações. | Lock por linha da wallet com ordem única de aquisição, `lock_timeout`, `version` como barreira, retries com jitter e 503 com `Retry-After: 1`. | ✅ VERIFICADO |
-| **3. Idempotência e Hash** | 15% | Deduplicação por chave, detecção de colisões de payload divergente (409) e replay com saldo histórico. | Constraint única no banco, SHA-256 canônico, gravação de `balance_after`. | ✅ VERIFICADO |
-| **4. Contabilidade (Ledger)** | 15% | Registro imutável de transações com saldo anterior e posterior, reconciliação matemática. | Tabela `wallet_ledger_entries` com trigger de imutabilidade e reconciliação em três vias (saldo × ledger × transações) em `ReconcileWalletUseCase`. | ✅ VERIFICADO |
-| **5. Mensageria Distribuída** | 10% | Consumo e publicação ordenados via SQS FIFO, Transactional Outbox Pattern e Inbox Pattern. | Fila `wagering-events.fifo` com `MessageGroupId: walletId` e desduplicação via `inbox_messages`. | ✅ VERIFICADO |
-| **6. Observabilidade** | 10% | Métricas Prometheus expostas via `/metrics` (contadores, latência, gauges de outbox e fila). | Endpoint `/metrics` via `prom-client`, alimentado pela porta `WageringMetrics`; todas as métricas documentadas são atualizadas (teste `../src/test/integration/metrics-wiring.spec.ts`); 8 regras de alerta em `../infra/prometheus/alerts.yml` testadas com `promtool`. | ✅ VERIFICADO |
-| **7. Resiliência e Falhas** | 5% | Dead Letter Queue para mensagens venenosas, tratamento de erros temporários vs definitivos. | Fila `wager-transactions-dlq.fifo` com `FailureReason`; erros permanentes direto para a DLQ; mensagem só sai da fila principal após a DLQ confirmar; redrive seletivo (`bun run dlq:redrive`) e retenção de outbox/inbox testados. | ✅ VERIFICADO |
-| **8. Testabilidade** | 5% | Testes unitários, integração, concorrência multi-processo e testes de carga. | 75 unitários, 77 integração, 6 concorrência, 4 carga (total: 162 testes em 29 arquivos); carga HTTP com p50/p95/p99 em `bun run load:http`; typecheck cobre produção, testes e scripts; workflow de CI em `.github/workflows/ci.yml`. | ✅ VERIFICADO |
+| Exigência | Implementação | Status |
+|---|---|---|
+| Não implementar autenticação artesanal; se não implementar IdP, documentar e deixar ponto de extensão | `NoopAuthGuard` + `ProviderIdentityPort` (`src/shared/application/ports/auth.guard.ts`); desenho OIDC (Keycloak/Zitadel) em `ARCHITECTURE.md` §15 | ✅ |
+| Health aberto; fila é canal interno, mas identidade do provedor validada no domínio | `/health/*` sem guard; mensagens SQS passam pelo mesmo validador e pelas mesmas regras (titularidade da wallet, referências do mesmo provedor) | ✅ |
 
----
+## Seção 4 — Stack
 
-## 3. As 8 Falhas Eliminatórias (Seção 14 do Desafio)
+| Exigência | Implementação | Status |
+|---|---|---|
+| Bun 1.x, TypeScript estrito, NestJS, PostgreSQL, SQS via LocalStack, Docker Compose | `package.json`, `tsconfig.json` (`strict`, `noUncheckedIndexedAccess`), `docker-compose.yml` (PostgreSQL 16, LocalStack 3, migração one-shot, 3 réplicas) | ✅ |
+| Migrations versionadas e reversíveis | 12 migrations com `down()`; `integration/invariants-resilience` (g) faz o ciclo down/up em banco descartável; CI roda `migration:down && migration:up` | ✅ |
+| MikroORM (preferencial), escolha e mapeamento de `Money` justificados | `ARCHITECTURE.md` §2 e §5; colunas `NUMERIC(19,2)` + moeda separada, reidratadas como `Money` | ✅ |
 
-| # | Falha Eliminatória Original | Status no Projeto | Evidência de Prevenção |
-| :-: | :--- | :---: | :--- |
-| **FE-01** | **Saldo negativo permitido sob concorrência** | **NÃO OCORRE** | Constraint de banco `chk_wallets_balance_non_negative` + validação em `Wallet.debit()`. |
-| **FE-02** | **Drift contábil entre carteira e ledger** | **NÃO OCORRE** | Ledger × transações imposto pelo PostgreSQL no commit (gatilhos diferidos) e verificado pela reconciliação em três vias; recusa e detecção cobertas em `../src/test/integration/reconciliation-three-way.spec.ts`. |
-| **FE-03** | **Débito duplo por falha de idempotência** | **NÃO OCORRE** | Chave única por provedor `uq_wager_provider_idempotency_key` no PostgreSQL. Teste com 50 envios simultâneos resulta em 1 débito. |
-| **FE-04** | **Mutação ou deleção de registro do ledger** | **NÃO OCORRE** | Abortado com erro PL/pgSQL pela trigger `trg_wallet_ledger_immutable`. |
-| **FE-05** | **Uso de ponto flutuante para dinheiro** | **NÃO OCORRE** | Uso exclusivo de `Money` com `Decimal.js` e tipo `numeric(19,2)`. |
-| **FE-06** | **Publicação de evento antes do commit da transação** | **NÃO OCORRE** | Transactional Outbox Pattern: evento gravado no PostgreSQL na mesma transação antes do envio. |
-| **FE-07** | **Solução que funciona corretamente somente em instância única** | **NÃO OCORRE** | Concorrência comprovada com 3 processos Bun independentes disputando a mesma carteira. |
-| **FE-08** | **Testes substituindo PostgreSQL e SQS por mocks** | **NÃO OCORRE** | PostgreSQL 16 é sempre real. SQS é real (LocalStack 3), exceto onde uma falha precisa ser injetada de forma determinística: as respostas do cliente SQS são roteirizadas nos testes de ordem/DLQ de `../src/test/integration/messaging-ordering.spec.ts` e no `(e.2)` de `invariants-resilience.spec.ts`. |
+## Seção 5 — Restrições invioláveis
+
+| # | Restrição | Implementação | Evidência | Status |
+|:-:|---|---|---|:-:|
+| 1 | Sem `number`/`float`/`double` para dinheiro | `Money` sobre `decimal.js`, string decimal com 2 casas; `NUMERIC(19,2)` | `unit/money.spec.ts` | ✅ |
+| 2 | Idempotência não pode depender de cache em memória | `UNIQUE (provider_id, idempotency_key)`, `UNIQUE (provider_id, external_transaction_id)`, inbox `(consumer_name, message_id)` | `concurrency/concurrent-bets` (50 idênticas → 1 débito), `integration/consumer-inbox-dedup` | ✅ |
+| 3 | Não confiar só em SQS FIFO | Invariantes no banco; inbox persistente; consumer trata redelivery | `integration/invariants-resilience` (b) | ✅ |
+| 4 | Não publicar evento antes do commit | Transactional outbox na mesma transação; publisher lê só linhas commitadas | `integration/invariants-resilience` (c), (h) | ✅ |
+| 5 | Não sobrescrever nem excluir ledger | `trg_wallet_ledger_immutable` (UPDATE/DELETE) + `trg_wallet_ledger_no_truncate` | `integration/use-cases` (imutabilidade), `integration/delivery-hardening` (truncate) | ✅ |
+| 6 | Sem lock global | `SELECT … FOR UPDATE` só na linha da wallet; advisory lock só por grupo da outbox | `concurrency/concurrent-bets` (wallets distintas em paralelo) | ✅ |
+| 7 | Sem `read → calculate → update` sem controle | Lock por linha + `version` verificada no UPDATE + retry limitado | `integration/invariants-resilience` (f.2-real) | ✅ |
+| 8 | Correto com múltiplas instâncias | Estado só no PostgreSQL; consumer/publisher/worker seguros entre réplicas | `concurrency/multiprocess-concurrency` (3 processos), `integration/messaging-ordering` (3 publishers) | ✅ |
+| 9 | Unicidade, imutabilidade e não-negatividade **no schema** | UNIQUEs, `CHECK`s, `uq_wager_reference_reversal`, imutabilidade do ledger, `trg_wager_transaction_guard` (transação terminal imutável), pareamento saldo ↔ ledger (`trg_wallet_balance_has_ledger`, `trg_ledger_wallet_version`), coerência ledger ↔ transação | `integration/delivery-hardening` (guardas), `integration/reconciliation-three-way` | ✅ |
+
+## Seção 6 — Modelo de domínio
+
+| Exigência | Implementação | Evidência | Status |
+|---|---|---|:-:|
+| Construtor privado + `create`/`from`/`rehydrate`; `rehydrate` não revalida | Todas as entidades e `Money` | `unit/wallet.spec.ts`, `unit/wager-transaction.spec.ts` | ✅ |
+| `Money` imutável; escala 2; rejeita NaN, Infinity, notação científica, vazio, > 2 casas, negativo na entrada; erro em moedas diferentes | `src/shared/domain/value-objects/money.ts` | `unit/money.spec.ts` | ✅ |
+| Multi-moeda com conflito testado | Wallet por `playerId + currency`; `CurrencyMismatchError`; `CURRENCY_MISMATCH` | `unit/money.spec.ts`, `unit/wager-rules.spec.ts`, `unit/wallet.spec.ts` | ✅ |
+| Wallet: única por `playerId + currency`; saldo ≥ 0; toda alteração tem lançamento e vice-versa; sem lost update; `version` = 1 na criação e só sobe com saldo | Agregado `Wallet`; `uq_wallets_player_currency`; `CHECK`; `wallet_version` + gatilhos (ADR-006) | `unit/wallet.spec.ts`, `integration/delivery-hardening` (corrida de criação → 1×201 + 409s; saldo sem lançamento recusado; versão sem saldo recusada) | ✅ |
+| `WagerTransaction`: estados e transições explícitos; terminais imutáveis; OPENING interno; mesma chave + payload diferente = conflito | Entidade + `trg_wager_transaction_guard`; validador rejeita OPENING | `unit/wager-transaction.spec.ts`, `integration/delivery-hardening`, `integration/pending-reference-idempotency` | ✅ |
+| `WalletLedgerEntry` sem campos mutáveis; `isBalanced()` na factory; no máximo um lançamento por wallet por transação; LOSS/REJECTED sem lançamento | Entidade imutável; `uq_ledger_transaction`; `settle()` | `unit/wallet.spec.ts`, `unit/wager-rules.spec.ts` | ✅ |
+| Inbox, alteração financeira, ledger e outbox na mesma transação SQL | `ProcessWagerTransactionUseCase.process` dentro de `UnitOfWork.transactional` | `integration/invariants-resilience` (a.0), `integration/sqs-consumer` | ✅ |
+
+## Seção 7 — Regras de negócio
+
+| Regra | Implementação (`src/wagering/domain/wager-rules.ts`) | Evidência | Status |
+|---|---|---|:-:|
+| BET debita; rejeita sem saldo | `settle` → `INSUFFICIENT_BALANCE` | `unit/wager-rules.spec.ts` | ✅ |
+| WIN credita; LOSS não move saldo nem gera lançamento | `settle` | `unit/wager-rules.spec.ts`, `integration/use-cases` | ✅ |
+| REFUND só de BET `PROCESSED`, uma vez | `checkReference` + `uq_wager_reference_reversal` | `unit/wager-rules.spec.ts`, `concurrency/concurrent-bets` (P0.2) | ✅ |
+| ROLLBACK inverte BET/WIN/REFUND `PROCESSED`, uma vez | `checkReference` + `settle` (direção inversa) | `unit/wager-rules.spec.ts`, `integration/invariants-resilience` (a.1–a.3) | ✅ |
+| 1. REFUND/ROLLBACK exigem referência | Validador + `MissingReferenceError` + `chk_wager_reference_required` | `unit/wager-rules.spec.ts`, `integration/http-validation` | ✅ |
+| 2. Mesmo provider, player, wallet, moeda e rodada | `checkReference` (`CROSS_*`, `CURRENCY_MISMATCH`) | `unit/wager-rules.spec.ts` | ✅ |
+| 3. Tipos referenciáveis | `INVALID_REFERENCE_KIND` | `unit/wager-rules.spec.ts` | ✅ |
+| 4. Não reverter duas vezes pelo mesmo tipo | Mais estrito: uma reversão por referência, qualquer tipo (ADR-003) | `integration/invariants-resilience` (a.1, a.2) | ✅¹ |
+| 5. Valor igual ao da referência | `REVERSAL_AMOUNT_MISMATCH` | `unit/wager-rules.spec.ts` | ✅ |
+| 6. REJECTED não altera saldo nem gera ledger | `recordRejection` não toca a wallet | `unit/wager-rules.spec.ts`, `integration/delivery-hardening` | ✅ |
+| 7. Repetição devolve o resultado original com o saldo da época | `balance_after` persistido | `integration/use-cases` (P0.3) | ✅ |
+| 8. Referência ausente → `PENDING_REFERENCE` | `awaitReference`; também quando a referência existe mas aguarda | `concurrency/concurrent-bets`, `integration/delivery-hardening` (cadeia ROLLBACK→REFUND→BET) | ✅ |
+| 9. Reversão que zeraria abaixo de 0: rejeitada com código distinto | `REVERSAL_INSUFFICIENT_BALANCE` | `unit/wager-rules.spec.ts`, `integration/http-endpoints` | ✅ |
+| 7.1 Worker com backoff, limite e `REJECTED` + evento | `RetryPendingReferencesUseCase` (10 tentativas, `min(2^n s, 300 s)`) | `integration/invariants-resilience` (d), `integration/use-cases` (P0.4) | ✅ |
+| 7.2 Taxonomia de `failureCode` documentada | `failure-codes.ts`; `ARCHITECTURE.md` §11 com ação do provedor | — | ✅ |
+
+## Seção 8 — Concorrência
+
+| Exigência | Evidência | Status |
+|---|---|:-:|
+| Cenário obrigatório: 100,00; duas apostas de 80,00 simultâneas → 1 `PROCESSED`, 1 `REJECTED`, saldo 20,00, 1 débito | `concurrency/concurrent-bets` (MANDATORY SCENARIO); repetido entre 3 instâncias no smoke test (`docs/evidence/validation-2026-10-15.md`) | ✅ |
+| Múltiplos workers na mesma wallet; wallets distintas em paralelo; ≥ 3 instâncias | `concurrency/concurrent-bets`, `concurrency/multiprocess-concurrency` | ✅ |
+| Estratégia justificada | Lock pessimista por wallet + `version` + retry limitado (`ARCHITECTURE.md` §3, ADR-001) | ✅ |
+
+## Seção 9 — API HTTP
+
+| Exigência | Implementação | Evidência | Status |
+|---|---|---|:-:|
+| `POST /wallets` com OPENING na mesma transação; duplicada = conflito | `OpenWalletUseCase`; 409 também na corrida | `integration/use-cases`, `integration/delivery-hardening` | ✅ |
+| Consultas: wallet, ledger com cursor estável e opaco, transação por id e por `(provider, externalId)` | Cursor por `wallet_version` | `integration/http-endpoints`, `integration/delivery-hardening` (páginas estáveis com escrita concorrente) | ✅ |
+| `Idempotency-Key` obrigatório e fonte da verdade | 400 `MISSING_IDEMPOTENCY_KEY` | `integration/delivery-hardening` | ✅ |
+| `payloadHash` = SHA-256 de JSON canônico do subconjunto de negócio, documentado | `canonical-hash.ts`; `ARCHITECTURE.md` §6 | `unit/canonical-hash.spec.ts` | ✅ |
+| Replay idêntico → mesma resposta + `idempotentReplay: true`; payload diferente → conflito | — | `integration/use-cases`, `integration/pending-reference-idempotency`, `integration/delivery-hardening` | ✅ |
+| Status distinguem payload inválido, conflito, regra de negócio, aceite pendente, falha transitória — de forma consistente | 400 / 409 / 422 / 202 / 503 (+ 500 para `FAILED`); `ARCHITECTURE.md` §12 | `integration/http-endpoints`, `integration/invariants-resilience` (f.1, f.2), `integration/database-unavailable` | ✅ |
+| Reconciliação sem correção silenciosa: log, métrica e sinalização | `ReconcileWalletUseCase` | `integration/metrics-wiring`, `integration/reconciliation-three-way` | ✅ |
+| `/health/live` e `/health/ready` (PostgreSQL e SQS) sem autenticação | `HealthController` | `integration/http-endpoints` | ✅ |
+
+## Seção 10 — Processamento por SQS
+
+| Exigência | Evidência | Status |
+|---|---|:-:|
+| Mesmo use case da entrada HTTP | `SqsWagerConsumer` → `ProcessWagerTransactionUseCase.execute` | ✅ |
+| Inbox persistente por `(consumerName, messageId)` | `integration/consumer-inbox-dedup` | ✅ |
+| Ack só após commit; redelivery sem duplicar | `integration/invariants-resilience` (b: processo morto após commit e antes do ack) | ✅ |
+| Negócio (terminal), transitório (backoff), permanente (DLQ); limite antes da DLQ | `integration/invariants-resilience` (e, e.2), `integration/messaging-ordering` | ✅ |
+| SIGTERM conclui em andamento ou devolve visibilidade | `integration/invariants-resilience` (i) | ✅ |
+
+## Seção 11 — Transactional Outbox
+
+| Exigência | Evidência | Status |
+|---|---|:-:|
+| Transação, saldo, ledger, inbox e evento atômicos | `integration/invariants-resilience` (a.0) | ✅ |
+| Publishers concorrentes sem perder nem duplicar indefinidamente | `integration/outbox-publisher`, `integration/messaging-ordering` | ✅ |
+| Commit → processo morre → outra instância publica → duplicata segura (`MessageDeduplicationId = eventId`) | `integration/invariants-resilience` (c) | ✅ |
+| Eventos mínimos: `WagerTransactionProcessed` (inclusive LOSS), `Rejected`, `WalletBalanceChanged` só com mudança de saldo, `PendingReference` | `integration/invariants-resilience` (h) | ✅ |
+| Envelope em classe abstrata com subclasse por evento; `eventType`/`version` no tipo; `data` com `MoneyProps` | `src/shared/domain/events/integration-event.ts`, `src/wagering/domain/events/` | ✅ |
+
+## Seção 12 — Observabilidade
+
+| Exigência | Implementação | Evidência | Status |
+|---|---|---|:-:|
+| Logs JSON com `correlationId`, `messageId`, `transactionId`, `walletId`, `providerId`, sem dados sensíveis | Pino; logs como objetos com identificadores; `X-Correlation-Id` gerado/propagado até os eventos | `integration/delivery-hardening` (propagação), amostras em `docs/evidence/validation-2026-10-15.md` | ✅ |
+| Métricas: por status, duplicatas, retries, DLQ, conflitos de lock, outbox lag, latência | `wagering_transactions_total{status}` e demais (`ARCHITECTURE.md` §14) | `integration/metrics-traffic`, `integration/metrics-wiring` | ✅ |
+| Health checks separados | `/health/live`, `/health/ready` | `integration/http-endpoints` | ✅ |
+
+## Seção 13 — Testes obrigatórios
+
+| Exigência | Arquivo |
+|---|---|
+| Unidade: Money (escala, entradas inválidas) | `unit/money.spec.ts` |
+| Unidade: invariantes da Wallet | `unit/wallet.spec.ts` |
+| Unidade: regras BET, WIN, LOSS, REFUND, ROLLBACK | `unit/wager-rules.spec.ts` (código de produção, sem cópia da regra) |
+| Unidade: conflito de moeda | `unit/money.spec.ts`, `unit/wager-rules.spec.ts` |
+| Unidade: idempotency key com payload divergente | `unit/canonical-hash.spec.ts`; integração em `integration/use-cases` |
+| Integração: migrations e constraints | `integration/invariants-resilience` (g), `integration/delivery-hardening`, `integration/reconciliation-three-way` |
+| Integração: atomicidade wallet/ledger/inbox/outbox | `integration/invariants-resilience` (a.0) |
+| Integração: inbox e redelivery | `integration/consumer-inbox-dedup`, `integration/sqs-consumer` |
+| Integração: publishers concorrentes | `integration/outbox-publisher`, `integration/messaging-ordering` |
+| Integração: retry e DLQ | `integration/invariants-resilience` (e, e.2), `integration/dlq-redrive` |
+| Integração: recuperação após reinicialização | `integration/invariants-resilience` (c) |
+| Concorrência 1–8 (50 em paralelo, cenário §8, wallets distintas, ≥ 3 processos, morte após commit, dois publishers, reversão antes da referência, reinício) | `concurrency/concurrent-bets`, `concurrency/multiprocess-concurrency`, `integration/invariants-resilience` (b, c), `integration/outbox-publisher` |
+| Invariante final `wallet.balance == saldo reconstruído pelo ledger` | Verificado pela reconciliação nos testes **e** imposto pelo PostgreSQL em todo commit (ADR-006) |
+
+## Seção 14 — Falhas eliminatórias
+
+| Falha | Situação |
+|---|---|
+| `number` para dinheiro | Não ocorre (`Money`/`decimal.js`, `NUMERIC(19,2)`) |
+| Saldo negativo por race | Não ocorre (lock por wallet + `CHECK`; cenário §8 testado com 3 instâncias) |
+| Débito ou crédito duplicado | Não ocorre (UNIQUEs de idempotência, inbox, `uq_ledger_transaction`, `uq_wager_reference_reversal`) |
+| Idempotência só em memória | Não ocorre (persistida) |
+| Correta só com uma instância | Não ocorre (testes com 3 processos) |
+| Evento antes do commit | Não ocorre (outbox) |
+| Ledger não auditável | Não ocorre (imutável, encadeado por versão, coerente com transações) |
+| Testes que trocam PostgreSQL e SQS por mocks | Não ocorre (PostgreSQL e LocalStack reais; ver ressalva de ambiente no `TEST_REPORT.md`) |
+
+Diferencial opcional atendido: teste de carga (`bun run test:load` no processo; `bun run load:http` contra as 3 réplicas, com throughput, percentis, taxa de erro, conflitos e outbox lag).
