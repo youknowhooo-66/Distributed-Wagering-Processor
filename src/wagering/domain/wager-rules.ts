@@ -71,6 +71,24 @@ export function checkReference(
   return { outcome: 'VALID' };
 }
 
+/**
+ * Optional link of a WIN to its BET ("WIN pode referenciar a BET da mesma rodada"). When the
+ * referenced transaction exists it must be a PROCESSED BET of the same provider, player,
+ * wallet, round and currency (the amount differs by nature). A missing BET does not hold the
+ * WIN back: the credit is applied and the link stays informational (referenceExternalTransactionId).
+ * Returns the failure code, or null when the WIN may proceed.
+ */
+export function checkWinReference(win: WagerTransaction, reference: WagerTransaction): FailureCode | null {
+  if (reference.providerId !== win.providerId) return FailureCode.CROSS_PROVIDER_REFERENCE;
+  if (reference.playerId !== win.playerId) return FailureCode.CROSS_PLAYER_REFERENCE;
+  if (reference.walletId !== win.walletId) return FailureCode.CROSS_WALLET_REFERENCE;
+  if (reference.roundId !== win.roundId) return FailureCode.CROSS_ROUND_REFERENCE;
+  if (reference.money.currency !== win.money.currency) return FailureCode.CURRENCY_MISMATCH;
+  if (reference.kind !== WagerTransactionKind.Bet) return FailureCode.INVALID_REFERENCE_KIND;
+  if (reference.status !== WagerTransactionStatus.Processed) return FailureCode.REFERENCE_NOT_PROCESSED;
+  return null;
+}
+
 export type Settlement =
   /** Applied; `entry` is absent when the kind does not move money (LOSS). */
   | { applied: true; entry?: WalletLedgerEntry }
@@ -80,7 +98,8 @@ export type Settlement =
  * Applies the transaction to the wallet (section 7 table):
  * BET debits, WIN/REFUND credit, LOSS moves nothing, ROLLBACK applies the inverse of its
  * reference. A debit that would make the balance negative is not applied; a reversal gets a
- * failure code distinct from a plain BET without funds (rule 9).
+ * failure code distinct from a plain BET without funds (rule 9). A credit beyond the storable
+ * maximum is not applied either (BALANCE_LIMIT_EXCEEDED) instead of failing in the database.
  */
 export function settle(
   tx: WagerTransaction,
@@ -92,6 +111,7 @@ export function settle(
 
   const direction = tx.ledgerDirectionFor(reference ?? undefined);
   if (direction === LedgerDirection.Credit) {
+    if (!wallet.canCredit(tx.money)) return { applied: false, failureCode: FailureCode.BALANCE_LIMIT_EXCEEDED };
     return { applied: true, entry: wallet.credit(tx.id, tx.money, at) };
   }
 

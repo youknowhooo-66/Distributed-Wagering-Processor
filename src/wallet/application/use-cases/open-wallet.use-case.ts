@@ -12,9 +12,11 @@ import {
   WagerTransactionKind,
 } from '../../../wagering/domain/wager-transaction.entity';
 import { WalletBalanceChanged } from '../../../wagering/domain/events/wallet-balance-changed.event';
+import { WagerTransactionProcessed } from '../../../wagering/domain/events/wager-transaction-processed.event';
 import { OutboxMessage } from '../../../wagering/domain/outbox-message.entity';
 import { generateId } from '../../../shared/domain/identifier';
 import { computePayloadHash } from '../../../shared/domain/canonical-hash';
+import { RESERVED_PROVIDER_ID } from '../../../wagering/application/wager-payload.validator';
 
 export interface OpenWalletCommand {
   playerId: string;
@@ -108,7 +110,7 @@ export class OpenWalletUseCase {
       const txId = generateId();
       const openingTx = WagerTransaction.create({
         id: txId,
-        providerId: 'system',
+        providerId: RESERVED_PROVIDER_ID,
         externalTransactionId: `opening-${walletId}`,
         idempotencyKey: `internal:opening:${walletId}`,
         payloadHash: computePayloadHash({ walletId, initialBalance: cmd.initialBalance }),
@@ -126,8 +128,10 @@ export class OpenWalletUseCase {
       await walletRepo.saveLedgerEntry(ledgerEntry);
       await wagerRepo.save(openingTx);
 
-      const balanceEvent = WalletBalanceChanged.from(wallet, ledgerEntry, { correlationId: txId });
-      await wagerRepo.saveOutboxMessage(OutboxMessage.enqueue(balanceEvent));
+      // OPENING is an applied transaction too: same pair of events as any balance-moving one
+      const ctx = { correlationId: txId };
+      await wagerRepo.saveOutboxMessage(OutboxMessage.enqueue(WagerTransactionProcessed.from(openingTx, ctx)));
+      await wagerRepo.saveOutboxMessage(OutboxMessage.enqueue(WalletBalanceChanged.from(wallet, ledgerEntry, ctx)));
     }
 
     return {

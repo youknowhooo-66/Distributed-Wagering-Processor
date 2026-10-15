@@ -14,7 +14,7 @@ import {
 } from '../../domain/wager-transaction.entity';
 import { InboxMessage } from '../../domain/inbox-message.entity';
 import { OutboxMessage } from '../../domain/outbox-message.entity';
-import { checkReference, checkWalletOwnership, settle } from '../../domain/wager-rules';
+import { checkReference, checkWalletOwnership, checkWinReference, settle } from '../../domain/wager-rules';
 import {
   FailureCode,
   IdempotencyConflictError,
@@ -278,6 +278,13 @@ export class ProcessWagerTransactionUseCase {
       }
       if (check.outcome === 'REJECT') {
         return this.recordRejection(scope, cmd, payloadHash, wallet, check.failureCode, wagerTx);
+      }
+    } else if (wagerTx.kind === WagerTransactionKind.Win && wagerTx.referenceExternalTransactionId) {
+      // Optional BET link: validated and recorded when the BET is known; a WIN never waits for it
+      referenceTx = await wagers.findByProviderAndExternalId(cmd.providerId, wagerTx.referenceExternalTransactionId);
+      const winReferenceError = referenceTx ? checkWinReference(wagerTx, referenceTx) : null;
+      if (winReferenceError) {
+        return this.recordRejection(scope, cmd, payloadHash, wallet, winReferenceError, wagerTx);
       }
     }
 

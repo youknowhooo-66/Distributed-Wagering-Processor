@@ -31,6 +31,9 @@ export interface WalletState {
  * - Version starts at 1 after creation and increments only when the balance changes
  */
 export class Wallet {
+  /** Largest balance a wallet can hold (the NUMERIC(19,2) column capacity). */
+  static readonly MAX_BALANCE_AMOUNT = '99999999999999999.99';
+
   private constructor(
     public readonly id: string,
     public readonly playerId: string,
@@ -132,12 +135,21 @@ export class Wallet {
     return this.apply(transactionId, LedgerDirection.Debit, money, this._balance.subtract(money), at);
   }
 
+  /** Whether a credit of `money` keeps the balance within {@link MAX_BALANCE_AMOUNT}. */
+  canCredit(money: Money): boolean {
+    this.assertSameCurrency(money);
+    const max = Money.fromInternal(Wallet.MAX_BALANCE_AMOUNT, this.currency);
+    return !max.isLessThan(this._balance.add(money));
+  }
+
   /**
-   * Credits the wallet.
+   * Credits the wallet. Throws if the balance would exceed {@link MAX_BALANCE_AMOUNT}.
    * Returns the corresponding ledger entry.
    */
   credit(transactionId: string, money: Money, at: Date): WalletLedgerEntry {
-    this.assertSameCurrency(money);
+    if (!this.canCredit(money)) {
+      throw new InvalidMoneyError(`balance would exceed ${Wallet.MAX_BALANCE_AMOUNT} ${this.currency}`);
+    }
     return this.apply(transactionId, LedgerDirection.Credit, money, this._balance.add(money), at);
   }
 

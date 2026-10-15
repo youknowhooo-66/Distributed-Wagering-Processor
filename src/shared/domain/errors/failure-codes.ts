@@ -10,6 +10,8 @@ export enum FailureCode {
   INSUFFICIENT_BALANCE = 'INSUFFICIENT_BALANCE',
   /** A reversal (ROLLBACK of a WIN or REFUND) would make the balance negative. */
   REVERSAL_INSUFFICIENT_BALANCE = 'REVERSAL_INSUFFICIENT_BALANCE',
+  /** A credit would take the balance above the largest storable amount (NUMERIC(19,2)). */
+  BALANCE_LIMIT_EXCEEDED = 'BALANCE_LIMIT_EXCEEDED',
 
   // ── Reference resolution ──
   REFERENCE_NOT_FOUND = 'REFERENCE_NOT_FOUND',

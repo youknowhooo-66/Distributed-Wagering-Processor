@@ -4,7 +4,7 @@ import {
   WagerTransactionKind,
   WagerTransactionStatus,
 } from '../../wagering/domain/wager-transaction.entity';
-import { checkReference, checkWalletOwnership, settle } from '../../wagering/domain/wager-rules';
+import { checkReference, checkWalletOwnership, checkWinReference, settle } from '../../wagering/domain/wager-rules';
 import { Wallet } from '../../wallet/domain/wallet.entity';
 import { LedgerDirection } from '../../wallet/domain/wallet-ledger-entry.entity';
 import { Money } from '../../shared/domain/value-objects';
@@ -257,5 +257,45 @@ describe('WagerTransaction.create', () => {
         createdAt: at,
       }),
     ).toThrow(MissingReferenceError);
+  });
+});
+
+describe('balance limit (NUMERIC(19,2) capacity)', () => {
+  it('a credit that would exceed the storable maximum is not applied: BALANCE_LIMIT_EXCEEDED', () => {
+    const w = wallet('99999999999999999.00');
+    const result = settle(tx({ kind: WagerTransactionKind.Win, amount: '1.00' }), w, null, at);
+    expect(result).toEqual({ applied: false, failureCode: FailureCode.BALANCE_LIMIT_EXCEEDED });
+    expect(w.balance.amount).toBe('99999999999999999.00');
+  });
+
+  it('a credit up to exactly the maximum is applied, with exact decimal arithmetic', () => {
+    const w = wallet('99999999999999998.98');
+    const result = settle(tx({ kind: WagerTransactionKind.Win, amount: '1.01' }), w, null, at);
+    expect(result.applied).toBe(true);
+    expect(w.balance.amount).toBe('99999999999999999.99');
+  });
+});
+
+describe('checkWinReference (optional WIN -> BET link)', () => {
+  const win = (o: TxOverrides = {}) => tx({ kind: WagerTransactionKind.Win, status: WagerTransactionStatus.Pending, ...o });
+
+  it('accepts a PROCESSED BET of the same context, whatever the amount', () => {
+    expect(checkWinReference(win({ amount: '500.00' }), tx({ kind: WagerTransactionKind.Bet, amount: '10.00' }))).toBeNull();
+  });
+
+  it.each([
+    ['round', { roundId: 'round-2' }, FailureCode.CROSS_ROUND_REFERENCE],
+    ['player', { playerId: 'player-2' }, FailureCode.CROSS_PLAYER_REFERENCE],
+    ['wallet', { walletId: 'wallet-2' }, FailureCode.CROSS_WALLET_REFERENCE],
+    ['currency', { currency: 'USD' }, FailureCode.CURRENCY_MISMATCH],
+  ] as const)('rejects a BET from another %s', (_label, refOverrides, code) => {
+    expect(checkWinReference(win(), tx({ kind: WagerTransactionKind.Bet, ...refOverrides }))).toBe(code);
+  });
+
+  it('rejects a reference that is not a BET, or a BET that was not processed', () => {
+    expect(checkWinReference(win(), tx({ kind: WagerTransactionKind.Loss }))).toBe(FailureCode.INVALID_REFERENCE_KIND);
+    expect(checkWinReference(win(), tx({ kind: WagerTransactionKind.Bet, status: WagerTransactionStatus.Rejected }))).toBe(
+      FailureCode.REFERENCE_NOT_PROCESSED,
+    );
   });
 });
