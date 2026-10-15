@@ -1,4 +1,5 @@
 import { Entity, PrimaryKey, Property, Unique, Check, Index } from '@mikro-orm/core';
+import { ExactDecimalType } from '../../../shared/infrastructure/database/exact-decimal.type';
 
 @Entity({ tableName: 'wallet_ledger_entries' })
 @Unique({ properties: ['walletId', 'transactionId'], name: 'uq_ledger_transaction' })
@@ -25,16 +26,16 @@ export class WalletLedgerEntryMikroEntity {
   @Property({ length: 6 })
   direction!: string;
 
-  @Property({ type: 'decimal', precision: 19, scale: 2 })
+  @Property({ type: ExactDecimalType, columnType: 'numeric(19,2)', precision: 19, scale: 2 })
   amount!: string;
 
   @Property({ length: 3 })
   currency!: string;
 
-  @Property({ type: 'decimal', precision: 19, scale: 2 })
+  @Property({ type: ExactDecimalType, columnType: 'numeric(19,2)', precision: 19, scale: 2 })
   balanceBefore!: string;
 
-  @Property({ type: 'decimal', precision: 19, scale: 2 })
+  @Property({ type: ExactDecimalType, columnType: 'numeric(19,2)', precision: 19, scale: 2 })
   balanceAfter!: string;
 
   /** Wallet version produced by this entry: gap-free per wallet, used as the ledger cursor. */

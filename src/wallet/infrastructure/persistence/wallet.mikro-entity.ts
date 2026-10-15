@@ -1,4 +1,5 @@
 import { Entity, PrimaryKey, Property, Unique, Check } from '@mikro-orm/core';
+import { ExactDecimalType } from '../../../shared/infrastructure/database/exact-decimal.type';
 
 @Entity({ tableName: 'wallets' })
 @Unique({ properties: ['playerId', 'currency'], name: 'uq_wallets_player_currency' })
@@ -15,7 +16,7 @@ export class WalletMikroEntity {
   @Property({ length: 3 })
   currency!: string;
 
-  @Property({ type: 'decimal', precision: 19, scale: 2 })
+  @Property({ type: ExactDecimalType, columnType: 'numeric(19,2)', precision: 19, scale: 2 })
   balanceAmount!: string;
 
   @Property({ version: true })

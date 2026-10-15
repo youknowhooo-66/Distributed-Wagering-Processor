@@ -1,4 +1,5 @@
 import { Entity, PrimaryKey, Property, Unique, Check, Index } from '@mikro-orm/core';
+import { ExactDecimalType } from '../../../shared/infrastructure/database/exact-decimal.type';
 
 @Entity({ tableName: 'wager_transactions' })
 @Unique({ properties: ['providerId', 'idempotencyKey'], name: 'uq_wager_provider_idempotency_key' })
@@ -48,7 +49,7 @@ export class WagerTransactionMikroEntity {
   @Property({ length: 10 })
   kind!: string;
 
-  @Property({ type: 'decimal', precision: 19, scale: 2 })
+  @Property({ type: ExactDecimalType, columnType: 'numeric(19,2)', precision: 19, scale: 2 })
   amount!: string;
 
   @Property({ length: 3 })
@@ -66,7 +67,7 @@ export class WagerTransactionMikroEntity {
   @Property({ length: 100, nullable: true })
   failureCode?: string;
 
-  @Property({ type: 'decimal', precision: 19, scale: 2, nullable: true })
+  @Property({ type: ExactDecimalType, columnType: 'numeric(19,2)', precision: 19, scale: 2, nullable: true })
   balanceAfter?: string;
 
   @Property({ type: 'timestamptz' })
